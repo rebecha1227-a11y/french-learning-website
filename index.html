@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Français Quest · TCF Canada 备考驾驶舱</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=VT323&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./styles.css" />
+
+    <!-- Supabase JS SDK（必须在 supabase.js 之前） -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="topbar-brand">
+        <span class="topbar-logo">Français Quest</span>
+        <span class="topbar-divider">|</span>
+        <span class="topbar-sub">TCF Canada 备考驾驶舱</span>
+      </div>
+      <nav class="topbar-nav" id="topbar-nav"></nav>
+      <div class="topbar-right">
+        <span class="countdown-chip">
+          <span class="countdown-chip-num" id="topbar-days">—</span>
+          <span class="countdown-chip-label">天</span>
+        </span>
+      </div>
+    </header>
+
+    <!-- HOME -->
+    <div id="page-home" class="page active">
+      <div class="home-grid">
+        <aside class="home-left">
+          <div class="card profile-card" id="profile-card"></div>
+          <div class="nav-section">
+            <div class="nav-section-title">功能导览</div>
+            <div class="feature-nav-grid" id="feature-nav-grid"></div>
+          </div>
+        </aside>
+        <section class="home-center">
+          <div class="card today-card" id="today-tasks-card"></div>
+          <div class="card progress-card" id="course-progress-card"></div>
+        </section>
+        <aside class="home-right">
+          <div class="card countdown-card" id="countdown-card"></div>
+          <div class="card heatmap-card" id="heatmap-card"></div>
+          <div class="card aitip-card" id="aitip-card"></div>
+        </aside>
+      </div>
+    </div>
+
+    <!-- INNER PAGES -->
+    <div id="page-dashboard"     class="page inner-page"></div>
+    <div id="page-curriculum"    class="page inner-page"></div>
+    <div id="page-unit-detail"   class="page inner-page"></div>
+    <div id="page-question-bank" class="page inner-page"></div>
+    <div id="page-mistakes"      class="page inner-page"></div>
+    <div id="page-youtube"       class="page inner-page"></div>
+
+    <!-- 数据 + 逻辑（顺序不能乱） -->
+    <script src="./site-data.js"></script>
+    <script src="./supabase.js"></script>   <!-- ← 新增，必须在 app.js 之前 -->
+    <script src="./app.js"></script>
+  </body>
+</html>
