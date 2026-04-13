@@ -99,21 +99,38 @@ window.doLogin = async function() {
   setTimeout(closeAuthModal, 800);
 };
 
+/* ✅ 修改：注册时指定重定向到法语网站 */
 window.doSignup = async function() {
   const email    = document.getElementById("auth-email-s").value.trim();
   const password = document.getElementById("auth-password-s").value;
   if (!email || !password) { setAuthMsg("请填写邮箱和密码"); return; }
   if (password.length < 6)  { setAuthMsg("密码至少需要6位"); return; }
   setAuthMsg("注册中…", "var(--text-dim)");
-  const { error } = await db.auth.signUp({ email, password });
+  
+  // 指定验证邮件点击后跳转的地址
+  const redirectTo = "https://rebecha1227-a11y.github.io/french-learning-website/";
+  
+  const { error } = await db.auth.signUp({ 
+    email, 
+    password,
+    options: { emailRedirectTo: redirectTo }
+  });
+  
   if (error) { setAuthMsg("注册失败：" + error.message); return; }
   setAuthMsg("注册成功！请检查邮箱确认链接，然后登录。", "var(--accent-teal)");
 };
 
+/* ✅ 修改：忘记密码时也指定重定向到法语网站 */
 window.doResetPassword = async function() {
   const email = document.getElementById("auth-email").value.trim();
   if (!email) { setAuthMsg("请先填写邮箱地址"); return; }
-  const { error } = await db.auth.resetPasswordForEmail(email);
+  
+  const redirectTo = "https://rebecha1227-a11y.github.io/french-learning-website/";
+  
+  const { error } = await db.auth.resetPasswordForEmail(email, {
+    redirectTo: redirectTo
+  });
+  
   if (error) { setAuthMsg("发送失败：" + error.message); return; }
   setAuthMsg("重置邮件已发送，请检查邮箱", "var(--accent-teal)");
 };
