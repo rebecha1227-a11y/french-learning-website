@@ -13,6 +13,15 @@ const SUPA_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIs
 const { createClient } = supabase;
 const db = createClient(SUPA_URL, SUPA_ANON);
 
+function withTimeout(promise, ms, timeoutMessage) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => {
+      setTimeout(() => reject(new Error(timeoutMessage)), ms);
+    })
+  ]);
+}
+
 /* ══════════════════════════════════════════════════════
    AUTH STATE
 ══════════════════════════════════════════════════════ */
@@ -171,24 +180,17 @@ window.saveProfileSettings = async function() {
   setSettingsMsg("保存中…", "var(--text-dim)");
 
   try {
-    const { data: updated, error: authErr } = await db.auth.updateUser({
-      data: { username: nextName }
-    });
+    const authResp = await withTimeout(
+      db.auth.updateUser({ data: { username: nextName } }),
+      10000,
+      "保存超时，请检查网络后重试"
+    );
+    const { data: updated, error: authErr } = authResp || {};
     if (authErr) {
       setSettingsMsg("保存失败：" + authErr.message);
       return;
     }
     if (updated?.user) currentUser = updated.user;
-
-    const { error: settingsErr } = await db.from("user_settings").upsert({
-      user_id: currentUser.id,
-      username: nextName,
-      updated_at: new Date().toISOString()
-    }, { onConflict: "user_id" });
-
-    if (settingsErr) {
-      console.warn("⚠ user_settings 保存失败:", settingsErr.message);
-    }
 
     localStorage.setItem("fq-username", nextName);
     updateProfileUI();
@@ -197,10 +199,26 @@ window.saveProfileSettings = async function() {
     if (typeof renderCourseProgress === "function") renderCourseProgress();
     if (typeof renderCountdown === "function") renderCountdown();
     setSettingsMsg("已保存", "var(--accent-teal)");
+
+    // 用户体验优先：不阻塞弹窗关闭，后台尝试写 user_settings
+    withTimeout(
+      db.from("user_settings").upsert({
+        user_id: currentUser.id,
+        username: nextName,
+        updated_at: new Date().toISOString()
+      }, { onConflict: "user_id" }),
+      6000,
+      "user_settings 保存超时"
+    ).then(({ error: settingsErr }) => {
+      if (settingsErr) console.warn("⚠ user_settings 保存失败:", settingsErr.message);
+    }).catch((e) => {
+      console.warn("⚠ user_settings 保存异常:", e?.message || e);
+    });
+
     setTimeout(() => window.closeProfileSettings(), 500);
   } catch (err) {
     console.error("❌ 保存用户名失败:", err);
-    setSettingsMsg("保存失败，请稍后重试");
+    setSettingsMsg(err?.message || "保存失败，请稍后重试");
   } finally {
     if (btn) {
       btn.disabled = false;
@@ -276,11 +294,16 @@ window.doResetPassword = async function() {
 
 window.doLogout = async function() {
   try {
-    const { error } = await db.auth.signOut();
+    const logoutResult = await withTimeout(
+      db.auth.signOut(),
+      10000,
+      "退出超时，请检查网络后重试"
+    );
+    const { error } = logoutResult || {};
     if (error) {
       console.error("❌ 退出失败:", error.message);
       alert("退出失败：" + error.message);
-      return;
+      return false;
     }
     currentUser = null;
     updateProfileUI();
@@ -288,9 +311,11 @@ window.doLogout = async function() {
     if (typeof renderHeatmap === "function") renderHeatmap();
     if (typeof renderCourseProgress === "function") renderCourseProgress();
     if (typeof renderCountdown === "function") renderCountdown();
+    return true;
   } catch (err) {
     console.error("❌ 退出异常:", err);
-    alert("退出失败，请重试。");
+    alert(err?.message || "退出失败，请重试。");
+    return false;
   }
 };
 

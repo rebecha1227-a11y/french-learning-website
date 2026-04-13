@@ -274,8 +274,22 @@ window.handleProfileAuthClick = async function(event){
       btn.disabled = true;
       btn.textContent = "退出中";
     }
-    if(typeof window.doLogout === "function"){
-      await window.doLogout();
+    try {
+      if(typeof window.doLogout === "function"){
+        const ok = await window.doLogout();
+        if(!ok && btn){
+          btn.disabled = false;
+          btn.textContent = "退出";
+        }
+      } else if(btn){
+        btn.disabled = false;
+        btn.textContent = "退出";
+      }
+    } catch {
+      if(btn){
+        btn.disabled = false;
+        btn.textContent = "退出";
+      }
     }
     return;
   }
