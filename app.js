@@ -1,5 +1,5 @@
 "use strict";
-const { nav:_nav, profile, tracking, aiTips, dashboard,
+const { nav:_nav, profile, aiTips, dashboard,
         curriculum, questionBank, mistakes, youtube } = window.siteData;
 
 const TASK_KEY      = "fq-tasks-v3";
@@ -25,6 +25,61 @@ function saveStudyLog(o){ localStorage.setItem(STUDY_LOG_KEY, JSON.stringify(o))
 /* today's date as YYYY-MM-DD */
 function todayStr(){ return new Date().toISOString().slice(0,10) }
 
+function normalizeForMatch(s){
+  return String(s || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function getCurrentUserObj(){
+  return typeof window.getUser === "function" ? window.getUser() : null;
+}
+
+function inferNameFromEmail(email){
+  const raw = String(email || "").split("@")[0].trim();
+  return raw || "学习者";
+}
+
+function getDisplayName(){
+  const user = getCurrentUserObj();
+  const metaName = user?.user_metadata?.username || user?.user_metadata?.name;
+  if(metaName && String(metaName).trim()) return String(metaName).trim();
+  const savedName = localStorage.getItem("fq-username");
+  if(savedName && savedName.trim()) return savedName.trim();
+  if(user?.email) return inferNameFromEmail(user.email);
+  return profile?.name || "学习者";
+}
+
+function getCompletionRate(tasks = getTasks()){
+  if(!tasks.length) return 0;
+  return Math.round(tasks.filter(t => t.done).length / tasks.length * 100);
+}
+
+function getLast7DaysDone(log = getStudyLog()){
+  let sum = 0;
+  for(let i = 0; i < 7; i++){
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const key = d.toISOString().slice(0,10);
+    const entry = log[key];
+    if(entry?.done) sum += entry.done;
+  }
+  return sum;
+}
+
+function taskRelatesToUnit(task, unit){
+  if(!task || !unit) return false;
+  if(task.unitId && task.unitId === unit.id) return true;
+  const hay = normalizeForMatch(`${task.title || ""} ${task.detail || ""}`);
+  if(!hay) return false;
+  const code = normalizeForMatch(unit.code || "");
+  const title = normalizeForMatch(unit.title || "");
+  return (code && hay.includes(code)) || (title && hay.includes(title));
+}
+
 /* Update study log for a given date based on tasks */
 function syncStudyLog(dateStr){
   const tasks  = getTasks().filter(t => (t.date||todayStr()) === dateStr);
@@ -48,13 +103,12 @@ function getAllUnits(){
 }
 
 function computeUnitProgress(unitId, bi, ui){
+  const unit    = curriculum.books?.[bi]?.units?.[ui] || { id:unitId };
   const tasks   = getTasks();
-  const related = tasks.filter(t => t.unitId === unitId);
-  if(related.length){
-    const pct = Math.round(related.filter(t=>t.done).length / related.length * 100);
-    return Math.max(5, pct);
-  }
-  return Math.max(5, Math.min(100, 28 + bi*5 + ui*12));
+  const related = tasks.filter(t => taskRelatesToUnit(t, unit));
+  if(!related.length) return 0;
+  const pct = Math.round(related.filter(t=>t.done).length / related.length * 100);
+  return Math.max(0, Math.min(100, pct));
 }
 
 function getSelectedUnit(){ return getAllUnits().find(u => u.id === selectedUnitId) || getAllUnits()[0] }
@@ -152,24 +206,41 @@ function renderTopbar(){
 
 /* ── PROFILE CARD ── */
 function renderProfileCard(){
+  const card      = document.getElementById("profile-card");
+  if(!card) return;
+
   const log       = getStudyLog();
+  const tasks     = getTasks();
   const today     = todayStr();
   const todayLog  = log[today] || { done:0, total:0 };
   const streak    = computeStreak(log);
   const examDate  = getExamDate();
+  const username  = getDisplayName();
+  const user      = getCurrentUserObj();
+  const loggedIn  = !!user;
+  const totalDone = tasks.filter(t => t.done).length;
+  const completionRate = getCompletionRate(tasks);
 
-  document.getElementById("profile-card").innerHTML = `
-    <div class="profile-avatar" style="font-size:11px;padding:4px;line-height:1.4">登录<br>同步</div>
-    <span class="profile-name vt">Rebecha</span>
-    <p class="profile-meta">A1 → B1 · TCF Canada ${esc(examDate)}</p>
+  card.innerHTML = `
+    <div class="profile-head">
+      <div class="profile-avatar">${loggedIn ? "已登录" : "访客"}</div>
+      <div class="profile-identity">
+        <span class="profile-name vt">${esc(username)}</span>
+        <p class="profile-meta">A1 → B1 · TCF Canada ${esc(examDate)}</p>
+        <p class="profile-email">${esc(user?.email || "未登录，本地模式")}</p>
+      </div>
+      <button class="profile-auth-btn ${loggedIn ? "logout" : "login"}" id="profile-auth-btn">
+        ${loggedIn ? "退出" : "登录"}
+      </button>
+    </div>
     <div class="profile-stats">
       <div class="profile-stat">
-        <span class="profile-stat-val">${profile.hours}<small style="font-size:11px">h</small></span>
-        <span class="profile-stat-key">累计时长</span>
+        <span class="profile-stat-val">${totalDone}</span>
+        <span class="profile-stat-key">累计完成任务</span>
       </div>
       <div class="profile-stat">
-        <span class="profile-stat-val">${Math.round(profile.accuracy*100)}<small style="font-size:11px">%</small></span>
-        <span class="profile-stat-key">正确率</span>
+        <span class="profile-stat-val">${completionRate}<small style="font-size:11px">%</small></span>
+        <span class="profile-stat-key">总体完成率</span>
       </div>
       <div class="profile-stat">
         <span class="profile-stat-val">${streak}</span>
@@ -180,6 +251,14 @@ function renderProfileCard(){
         <span class="profile-stat-key">今日完成</span>
       </div>
     </div>`;
+
+  card.querySelector("#profile-auth-btn")?.addEventListener("click", async () => {
+    if(typeof window.isLoggedIn === "function" && window.isLoggedIn()){
+      if(typeof window.doLogout === "function") await window.doLogout();
+      return;
+    }
+    if(typeof window.openAuthModal === "function") window.openAuthModal();
+  });
 }
 
 /* compute streak from study log */
@@ -192,7 +271,7 @@ function computeStreak(log){
     if(entry && entry.done > 0){ streak++; d.setDate(d.getDate()-1); }
     else break;
   }
-  return streak > 0 ? streak+" 天" : profile.streak;
+  return streak > 0 ? streak+" 天" : "0 天";
 }
 
 /* ── FEATURE NAV GRID (FIX #2: cards navigate correctly) ── */
@@ -224,22 +303,10 @@ function renderFeatureNav(){
 function renderTodayTasks(){
   const el       = document.getElementById("today-tasks-card");
   const today    = todayStr();
-
-  let tasks = getTasks();
-  /* seed default tasks if none exist for today */
-  if(!tasks.length){
-    const seeded = dashboard.todayPlan.map(t => ({
-      id:    t.id,
-      title: t.title,
-      detail:t.detail || "",
-      type:  t.type   || "讲义",
-      done:  false,
-      time:  t.time   || "",
-      date:  today,
-    }));
-    saveTasks(seeded);
-    tasks = seeded;
-  }
+  const tasks    = getTasks();
+  const log      = getStudyLog();
+  const weekDone = getLast7DaysDone(log);
+  const overallCompletion = getCompletionRate(tasks);
 
   /* tasks for currently selected date (stored in el dataset or today) */
   const activeDate = el.dataset.activeDate || today;
@@ -266,7 +333,7 @@ function renderTodayTasks(){
       <button class="add-task-btn" id="ht-add">＋</button>
     </div>
     <div class="task-list" id="ht-list">
-      ${dayTasks.map(t => `
+      ${dayTasks.length ? dayTasks.map(t => `
         <div class="task-item ${t.done?"done":""}" data-tid="${esc(t.id)}">
           <div class="task-cb">${t.done?"✓":""}</div>
           <div class="task-body">
@@ -275,7 +342,7 @@ function renderTodayTasks(){
           </div>
           <span class="task-tag" data-t="${esc(t.type)}">${esc(t.type)}</span>
           <button class="btn-danger btn-small" data-dt="${esc(t.id)}" style="margin-left:4px;flex-shrink:0">✕</button>
-        </div>`).join("")}
+        </div>`).join("") : `<div class="task-empty">这一天还没有任务，先添加一个学习目标吧。</div>`}
     </div>
     <div class="task-summary-row">
       <div class="task-summary-box">
@@ -283,12 +350,12 @@ function renderTodayTasks(){
         <div class="task-summary-key">今日完成</div>
       </div>
       <div class="task-summary-box">
-        <span class="task-summary-val" style="color:var(--accent-gold)">${esc(dashboard.questSummary[1].value)}</span>
-        <div class="task-summary-key">本周学习</div>
+        <span class="task-summary-val" style="color:var(--accent-gold)">${weekDone}</span>
+        <div class="task-summary-key">近7天完成</div>
       </div>
       <div class="task-summary-box">
-        <span class="task-summary-val" style="color:var(--accent-rose)">${esc(dashboard.questSummary[2].value)}</span>
-        <div class="task-summary-key">正确率</div>
+        <span class="task-summary-val" style="color:var(--accent-rose)">${overallCompletion}%</span>
+        <div class="task-summary-key">总体完成率</div>
       </div>
     </div>`;
 
@@ -466,6 +533,12 @@ function renderAiTip(){
 function buildDashboard(){
   const today    = todayStr();
   const log      = getStudyLog();
+  const tasks    = getTasks();
+  const todayTasks = tasks.filter(t => (t.date||today) === today);
+  const todayDone  = todayTasks.filter(t => t.done).length;
+  const weekDone   = getLast7DaysDone(log);
+  const overallCompletion = getCompletionRate(tasks);
+  const focus = todayTasks[0]?.type || "待设置";
   const cells    = [];
   for(let i=34;i>=0;i--){
     const d=new Date(); d.setDate(d.getDate()-i);
@@ -479,11 +552,22 @@ function buildDashboard(){
 
   return `<div class="dash-content-stack">
   <div class="dash-metric-row">
-    ${dashboard.metrics.map(m=>`
-      <div class="dash-metric-box">
-        <span class="dash-metric-val">${esc(m.value)}</span>
-        <span class="dash-metric-key">${esc(m.label)}</span>
-      </div>`).join("")}
+    <div class="dash-metric-box">
+      <span class="dash-metric-val">${todayDone}/${todayTasks.length}</span>
+      <span class="dash-metric-key">今日学习完成</span>
+    </div>
+    <div class="dash-metric-box">
+      <span class="dash-metric-val">${weekDone}</span>
+      <span class="dash-metric-key">近7天完成任务</span>
+    </div>
+    <div class="dash-metric-box">
+      <span class="dash-metric-val">${overallCompletion}%</span>
+      <span class="dash-metric-key">总体完成率</span>
+    </div>
+    <div class="dash-metric-box">
+      <span class="dash-metric-val">${esc(focus)}</span>
+      <span class="dash-metric-key">当前重心</span>
+    </div>
   </div>
 
   <div class="card card-pad">
@@ -557,6 +641,9 @@ function refreshDashboardList(el, dateStr){
         t.done = !t.done;
         saveTasks(ts);
         syncStudyLog(t.date||todayStr());
+        if(window.syncTask) syncTask(t);
+        const logObj = getStudyLog();
+        if(window.syncStudyLogDay) syncStudyLogDay(t.date||todayStr(), logObj[t.date||todayStr()]||{done:0,total:0});
         refreshDashboardList(el, dateStr);
         refreshDashboardHeatmap(el);
         renderTodayTasks(); renderHeatmap(); renderProfileCard(); renderCourseProgress();
@@ -569,8 +656,12 @@ function refreshDashboardList(el, dateStr){
       const ts = getTasks();
       const t  = ts.find(x => x.id === btn.dataset.dt);
       const d  = t?.date || todayStr();
+      if(window.deleteTask) deleteTask(btn.dataset.dt);
       saveTasks(ts.filter(x => x.id !== btn.dataset.dt));
       syncStudyLog(d);
+      const logObj = getStudyLog();
+      if(window.syncStudyLogDay && logObj[d]) syncStudyLogDay(d, logObj[d]);
+      if(window.deleteStudyLogDay && !logObj[d]) deleteStudyLogDay(d);
       refreshDashboardList(el, dateStr);
       refreshDashboardHeatmap(el);
       renderTodayTasks(); renderHeatmap(); renderProfileCard(); renderCourseProgress();
@@ -601,6 +692,7 @@ function bindDashboardEvents(el){
     const val = el.querySelector("#dash-exam-input")?.value;
     if(!val) return;
     saveExamDate(val);
+    if(window.syncExamDate) syncExamDate(val);
     renderCountdown(); renderProfileCard();
     document.getElementById("topbar-days").textContent = getCountdownDays();
     const msg = el.querySelector("#dash-exam-msg");
@@ -622,9 +714,13 @@ function bindDashboardEvents(el){
     const v   = inp.value.trim();
     if(!v) return;
     const ts  = getTasks();
-    ts.push({ id:"t-"+Date.now(), title:v, type:sel.value, done:false, detail:"", date:activeDate });
+    const newTask = { id:"t-"+Date.now(), title:v, type:sel.value, done:false, detail:"", date:activeDate };
+    ts.push(newTask);
     saveTasks(ts);
     syncStudyLog(activeDate);
+    if(window.syncTask) syncTask(newTask);
+    const logObj = getStudyLog();
+    if(window.syncStudyLogDay) syncStudyLogDay(activeDate, logObj[activeDate]||{done:0,total:0});
     inp.value = "";
     refreshDashboardList(el, activeDate);
     refreshDashboardHeatmap(el);

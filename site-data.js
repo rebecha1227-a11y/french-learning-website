@@ -11,19 +11,16 @@ window.siteData = {
   profile: {
     name: "Rebecha",
     target: "TCF Canada · 2027-05-01",
-    level: "A1 → C1",
-    hours: 286,
-    accuracy: 0.74,
+    level: "A1 → B1",
     weeklyGoal: "本周目标 12 小时",
-    streak: "9 天连续",
     avatar: "RF"
   },
 
   tracking: {
-    totalHours: 286,
-    thisWeek: 11.5,
-    sessions: 38,
-    heatmap: [1,2,0,3,1,2,0,2,3,1,0,2,2,1,0,1,2,3,2,0,1,1,2,2,3,1,0,2,3,2,1,0,1,2,2],
+    /* 热力图与进度改为读取真实用户行为数据（Supabase + localStorage） */
+    totalHours: 0,
+    thisWeek: 0,
+    sessions: 0,
     weaknesses: [
       { label: "听力细节", value: 78, tone: "rose", level: "需二刷" },
       { label: "语法变位", value: 64, tone: "gold", level: "波动" },

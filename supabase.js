@@ -21,6 +21,14 @@ let currentUser = null;
 /* 暴露给 app.js 使用 */
 window.getUser    = () => currentUser;
 window.isLoggedIn = () => !!currentUser;
+window.getCurrentUsername = () => {
+  const metaName = currentUser?.user_metadata?.username || currentUser?.user_metadata?.name;
+  if (metaName && String(metaName).trim()) return String(metaName).trim();
+  const cached = localStorage.getItem("fq-username");
+  if (cached && cached.trim()) return cached.trim();
+  const email = currentUser?.email || "";
+  return email ? email.split("@")[0] : "";
+};
 
 /* 监听登录状态变化 */
 db.auth.onAuthStateChange(async (event, session) => {
@@ -30,6 +38,14 @@ db.auth.onAuthStateChange(async (event, session) => {
     await pullAllFromCloud();   // 登录后拉取云端数据
   }
 });
+
+/* 刷新页面时恢复会话 */
+(async function initAuthSession() {
+  const { data } = await db.auth.getSession();
+  currentUser = data?.session?.user ?? null;
+  updateProfileUI();
+  if (currentUser) await pullAllFromCloud();
+})();
 
 /* ══════════════════════════════════════════════════════
    AUTH UI — 登录弹窗
@@ -55,6 +71,7 @@ function injectAuthModal() {
           <button class="auth-btn-ghost" onclick="doResetPassword()">忘记密码？</button>
         </div>
         <div id="auth-signup-form" style="display:none">
+          <input class="auth-input" id="auth-username-s" type="text" placeholder="用户名（将显示在首页角色卡）" autocomplete="nickname"/>
           <input class="auth-input" id="auth-email-s" type="email" placeholder="邮箱地址" autocomplete="email"/>
           <input class="auth-input" id="auth-password-s" type="password" placeholder="设置密码（至少6位）" autocomplete="new-password"/>
           <button class="auth-btn-primary" onclick="doSignup()">创建账号</button>
@@ -101,9 +118,12 @@ window.doLogin = async function() {
 
 /* ✅ 修改：注册时指定重定向到法语网站 */
 window.doSignup = async function() {
+  const username = document.getElementById("auth-username-s").value.trim();
   const email    = document.getElementById("auth-email-s").value.trim();
   const password = document.getElementById("auth-password-s").value;
-  if (!email || !password) { setAuthMsg("请填写邮箱和密码"); return; }
+  const finalName = username || email.split("@")[0];
+  if (!email || !password || !finalName) { setAuthMsg("请填写用户名、邮箱和密码"); return; }
+  if (finalName.length > 24) { setAuthMsg("用户名建议不超过 24 个字符"); return; }
   if (password.length < 6)  { setAuthMsg("密码至少需要6位"); return; }
   setAuthMsg("注册中…", "var(--text-dim)");
   
@@ -113,7 +133,10 @@ window.doSignup = async function() {
   const { error } = await db.auth.signUp({ 
     email, 
     password,
-    options: { emailRedirectTo: redirectTo }
+    options: {
+      emailRedirectTo: redirectTo,
+      data: { username: finalName }
+    }
   });
   
   if (error) { setAuthMsg("注册失败：" + error.message); return; }
@@ -136,7 +159,12 @@ window.doResetPassword = async function() {
 };
 
 window.doLogout = async function() {
-  await db.auth.signOut();
+  const { error } = await db.auth.signOut();
+  if (error) {
+    console.error("❌ 退出失败:", error.message);
+    alert("退出失败：" + error.message);
+    return;
+  }
   currentUser = null;
   updateProfileUI();
 };
@@ -145,25 +173,7 @@ window.doLogout = async function() {
    PROFILE UI 更新
 ══════════════════════════════════════════════════════ */
 function updateProfileUI() {
-  const card = document.getElementById("profile-card");
-  if (!card) return;
-  const avatarEl = card.querySelector(".profile-avatar");
-  if (!avatarEl) return;
-
-  if (currentUser) {
-    const email  = currentUser.email || "";
-    const handle = email.split("@")[0].slice(0, 6);
-    avatarEl.innerHTML = `
-      <div style="font-size:11px;line-height:1.3;color:var(--accent-teal)">${handle}</div>
-      <button onclick="doLogout()" style="font-size:9px;margin-top:3px;padding:1px 5px;
-        background:transparent;border:1px solid var(--accent-rose);border-radius:2px;
-        color:var(--accent-rose);cursor:pointer">退出</button>`;
-  } else {
-    avatarEl.innerHTML = `
-      <button onclick="openAuthModal()" style="font-size:10px;padding:3px 6px;background:transparent;
-        border:1px solid var(--accent-blue);border-radius:2px;color:var(--accent-blue);cursor:pointer;
-        line-height:1.4">登录<br>同步</button>`;
-  }
+  if (typeof renderProfileCard === "function") renderProfileCard();
 }
 
 /* ══════════════════════════════════════════════════════
@@ -206,6 +216,9 @@ async function pullAllFromCloud() {
   const { data: settings } = await db.from("user_settings").select("*").eq("user_id", uid).single();
   if (settings?.exam_date) {
     localStorage.setItem("fq-exam-date", settings.exam_date);
+  }
+  if (settings?.username) {
+    localStorage.setItem("fq-username", settings.username);
   }
 
   /* 拉取完毕后刷新首页 UI */
