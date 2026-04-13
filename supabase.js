@@ -159,14 +159,23 @@ window.doResetPassword = async function() {
 };
 
 window.doLogout = async function() {
-  const { error } = await db.auth.signOut();
-  if (error) {
-    console.error("❌ 退出失败:", error.message);
-    alert("退出失败：" + error.message);
-    return;
+  try {
+    const { error } = await db.auth.signOut();
+    if (error) {
+      console.error("❌ 退出失败:", error.message);
+      alert("退出失败：" + error.message);
+      return;
+    }
+    currentUser = null;
+    updateProfileUI();
+    if (typeof renderTodayTasks === "function") renderTodayTasks();
+    if (typeof renderHeatmap === "function") renderHeatmap();
+    if (typeof renderCourseProgress === "function") renderCourseProgress();
+    if (typeof renderCountdown === "function") renderCountdown();
+  } catch (err) {
+    console.error("❌ 退出异常:", err);
+    alert("退出失败，请重试。");
   }
-  currentUser = null;
-  updateProfileUI();
 };
 
 /* ══════════════════════════════════════════════════════

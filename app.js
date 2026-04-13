@@ -53,6 +53,12 @@ function getDisplayName(){
   return profile?.name || "学习者";
 }
 
+function compactDisplayName(name){
+  const s = String(name || "").trim();
+  if(!s) return "学习者";
+  return s.length > 16 ? `${s.slice(0,16)}…` : s;
+}
+
 function getCompletionRate(tasks = getTasks()){
   if(!tasks.length) return 0;
   return Math.round(tasks.filter(t => t.done).length / tasks.length * 100);
@@ -215,7 +221,7 @@ function renderProfileCard(){
   const todayLog  = log[today] || { done:0, total:0 };
   const streak    = computeStreak(log);
   const examDate  = getExamDate();
-  const username  = getDisplayName();
+  const username  = compactDisplayName(getDisplayName());
   const user      = getCurrentUserObj();
   const loggedIn  = !!user;
   const totalDone = tasks.filter(t => t.done).length;
@@ -252,14 +258,23 @@ function renderProfileCard(){
       </div>
     </div>`;
 
-  card.querySelector("#profile-auth-btn")?.addEventListener("click", async () => {
-    if(typeof window.isLoggedIn === "function" && window.isLoggedIn()){
-      if(typeof window.doLogout === "function") await window.doLogout();
-      return;
-    }
-    if(typeof window.openAuthModal === "function") window.openAuthModal();
-  });
+  card.querySelector("#profile-auth-btn")?.addEventListener("click", window.handleProfileAuthClick);
 }
+
+window.handleProfileAuthClick = async function(event){
+  const btn = event?.currentTarget || event?.target;
+  if(typeof window.isLoggedIn === "function" && window.isLoggedIn()){
+    if(btn){
+      btn.disabled = true;
+      btn.textContent = "退出中";
+    }
+    if(typeof window.doLogout === "function"){
+      await window.doLogout();
+    }
+    return;
+  }
+  if(typeof window.openAuthModal === "function") window.openAuthModal();
+};
 
 /* compute streak from study log */
 function computeStreak(log){
