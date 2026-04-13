@@ -235,9 +235,12 @@ function renderProfileCard(){
         <p class="profile-meta">A1 → B1 · TCF Canada ${esc(examDate)}</p>
         <p class="profile-email">${esc(user?.email || "未登录，本地模式")}</p>
       </div>
-      <button class="profile-auth-btn ${loggedIn ? "logout" : "login"}" id="profile-auth-btn">
-        ${loggedIn ? "退出" : "登录"}
-      </button>
+      <div class="profile-actions">
+        ${loggedIn ? `<button class="profile-settings-btn" id="profile-settings-btn">设置</button>` : ""}
+        <button class="profile-auth-btn ${loggedIn ? "logout" : "login"}" id="profile-auth-btn">
+          ${loggedIn ? "退出" : "登录"}
+        </button>
+      </div>
     </div>
     <div class="profile-stats">
       <div class="profile-stat">
@@ -259,6 +262,9 @@ function renderProfileCard(){
     </div>`;
 
   card.querySelector("#profile-auth-btn")?.addEventListener("click", window.handleProfileAuthClick);
+  card.querySelector("#profile-settings-btn")?.addEventListener("click", () => {
+    if(typeof window.openProfileSettings === "function") window.openProfileSettings();
+  });
 }
 
 window.handleProfileAuthClick = async function(event){

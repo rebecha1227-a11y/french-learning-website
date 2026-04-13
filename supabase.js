@@ -93,6 +93,122 @@ window.closeAuthModal = function() {
   if (o) o.style.display = "none";
 };
 
+function injectProfileSettingsModal() {
+  if (document.getElementById("profile-settings-modal")) return;
+  const modal = document.createElement("div");
+  modal.id = "profile-settings-modal";
+  modal.innerHTML = `
+    <div class="settings-overlay" id="settings-overlay">
+      <div class="settings-box">
+        <div class="settings-title">账号设置</div>
+        <label class="settings-label" for="settings-username-input">用户名（首页角色卡显示）</label>
+        <input class="settings-input" id="settings-username-input" type="text" maxlength="24" placeholder="输入用户名"/>
+        <p class="settings-msg" id="settings-msg"></p>
+        <div class="settings-actions">
+          <button class="settings-btn-primary" id="settings-save-btn">保存</button>
+          <button class="settings-btn-ghost" id="settings-cancel-btn">取消</button>
+        </div>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+
+  modal.querySelector("#settings-cancel-btn")?.addEventListener("click", () => {
+    window.closeProfileSettings();
+  });
+  modal.querySelector("#settings-save-btn")?.addEventListener("click", () => {
+    window.saveProfileSettings();
+  });
+}
+
+function setSettingsMsg(msg, color = "var(--accent-rose)") {
+  const el = document.getElementById("settings-msg");
+  if (el) {
+    el.textContent = msg;
+    el.style.color = color;
+  }
+}
+
+window.openProfileSettings = function() {
+  if (!currentUser) {
+    openAuthModal();
+    return;
+  }
+  injectProfileSettingsModal();
+  const overlay = document.getElementById("settings-overlay");
+  if (overlay) overlay.style.display = "flex";
+
+  const inp = document.getElementById("settings-username-input");
+  if (inp) {
+    inp.value = window.getCurrentUsername() || "";
+    setTimeout(() => inp.focus(), 10);
+  }
+  setSettingsMsg("");
+};
+
+window.closeProfileSettings = function() {
+  const overlay = document.getElementById("settings-overlay");
+  if (overlay) overlay.style.display = "none";
+};
+
+window.saveProfileSettings = async function() {
+  if (!currentUser) return;
+  const btn = document.getElementById("settings-save-btn");
+  const inp = document.getElementById("settings-username-input");
+  const nextName = (inp?.value || "").trim();
+  if (!nextName) {
+    setSettingsMsg("用户名不能为空");
+    return;
+  }
+  if (nextName.length > 24) {
+    setSettingsMsg("用户名不能超过 24 个字符");
+    return;
+  }
+
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "保存中";
+  }
+  setSettingsMsg("保存中…", "var(--text-dim)");
+
+  try {
+    const { data: updated, error: authErr } = await db.auth.updateUser({
+      data: { username: nextName }
+    });
+    if (authErr) {
+      setSettingsMsg("保存失败：" + authErr.message);
+      return;
+    }
+    if (updated?.user) currentUser = updated.user;
+
+    const { error: settingsErr } = await db.from("user_settings").upsert({
+      user_id: currentUser.id,
+      username: nextName,
+      updated_at: new Date().toISOString()
+    }, { onConflict: "user_id" });
+
+    if (settingsErr) {
+      console.warn("⚠ user_settings 保存失败:", settingsErr.message);
+    }
+
+    localStorage.setItem("fq-username", nextName);
+    updateProfileUI();
+    if (typeof renderTodayTasks === "function") renderTodayTasks();
+    if (typeof renderHeatmap === "function") renderHeatmap();
+    if (typeof renderCourseProgress === "function") renderCourseProgress();
+    if (typeof renderCountdown === "function") renderCountdown();
+    setSettingsMsg("已保存", "var(--accent-teal)");
+    setTimeout(() => window.closeProfileSettings(), 500);
+  } catch (err) {
+    console.error("❌ 保存用户名失败:", err);
+    setSettingsMsg("保存失败，请稍后重试");
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = "保存";
+    }
+  }
+};
+
 window.switchAuthTab = function(tab) {
   document.getElementById("auth-login-form").style.display  = tab === "login"  ? "" : "none";
   document.getElementById("auth-signup-form").style.display = tab === "signup" ? "" : "none";
@@ -410,6 +526,77 @@ authStyles.textContent = `
   .auth-msg {
     font-size: 12px; text-align: center;
     min-height: 18px; margin: 0;
+  }
+
+  .settings-overlay {
+    display: none;
+    position: fixed; inset: 0; z-index: 10000;
+    background: rgba(38,32,26,0.72);
+    align-items: center; justify-content: center;
+    backdrop-filter: blur(4px);
+  }
+  .settings-box {
+    background: var(--bg-card);
+    border: 2px solid var(--border);
+    border-radius: var(--card-r);
+    box-shadow: 6px 6px 0 var(--border-dark);
+    padding: 20px 20px 16px;
+    width: min(360px, 92vw);
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .settings-title {
+    font-family: 'VT323', monospace;
+    font-size: 24px;
+    color: var(--accent-purple);
+    text-align: center;
+    margin-bottom: 2px;
+  }
+  .settings-label {
+    font-size: 12px;
+    color: var(--text-sub);
+  }
+  .settings-input {
+    width: 100%; padding: 9px 11px;
+    background: var(--bg-inset);
+    border: 2px solid var(--border);
+    border-radius: var(--card-r);
+    font-size: 13px; color: var(--text-main);
+    font-family: 'Noto Sans SC', sans-serif;
+  }
+  .settings-input:focus { outline: none; border-color: var(--accent-teal); }
+  .settings-msg {
+    margin: 0;
+    min-height: 18px;
+    text-align: center;
+    font-size: 12px;
+  }
+  .settings-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .settings-btn-primary {
+    padding: 9px;
+    background: var(--accent-purple);
+    border: 2px solid #4a3c78;
+    border-radius: var(--card-r);
+    color: #fffdf7;
+    box-shadow: 3px 3px 0 #4a3c78;
+    font-size: 13px;
+    font-family: 'Noto Sans SC', sans-serif;
+    cursor: pointer;
+  }
+  .settings-btn-primary:hover { transform: translate(-1px,-1px); }
+  .settings-btn-primary:disabled { opacity: .7; cursor: default; transform: none; }
+  .settings-btn-ghost {
+    padding: 9px;
+    background: transparent;
+    border: 2px solid var(--border);
+    border-radius: var(--card-r);
+    color: var(--text-sub);
+    font-size: 13px;
+    font-family: 'Noto Sans SC', sans-serif;
+    cursor: pointer;
   }
 `;
 document.head.appendChild(authStyles);
