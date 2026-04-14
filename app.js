@@ -8,6 +8,10 @@ const EXAM_KEY      = "fq-exam-date";
 const STUDY_LOG_KEY = "fq-study-log"; // { "2025-06-01": { done: 2, total: 4 } }
 const EX_STATS_KEY  = "fq-exercise-stats-v1";
 const UNIT_RECO_KEY = "fq-unit-reco-v1";
+const UNIT_LEARN_KEY = "fq-unit-learning-v1"; // { [unitId]: { lectureDone, exerciseKeys:[] } }
+const MISTAKE_TAG_KEY = "fq-mistake-tag-library-v1";
+const ROLLOVER_SETTINGS_KEY = "fq-rollover-settings-v1";
+const METRICS_KEY = "fq-product-metrics-v1";
 const BJT_TZ        = "Asia/Shanghai";
 const WEEKDAY_CN    = ["周日","周一","周二","周三","周四","周五","周六"];
 
@@ -15,10 +19,56 @@ let selectedUnitId  = curriculum.books[0].units[0].id;
 let activeUnitTab   = "lecture";
 const renderedPages = new Set();
 let authActionPending = false;
+let autoRolloverNotice = "";
 
 /* ── helpers ── */
 function esc(s){ return String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;") }
-function getTasks(){ try{ return JSON.parse(localStorage.getItem(TASK_KEY)||"[]") }catch{ return [] } }
+function normalizeTaskDates(task){
+  const today = todayStr();
+  const plannedDate = task.plannedDate || task.date || today;
+  const workingDate = task.workingDate || task.date || plannedDate;
+  const normalized = {
+    ...task,
+    plannedDate,
+    workingDate,
+    date: workingDate,
+    rolloverCount: Number(task.rolloverCount || 0),
+    rolloverMode: task.rolloverMode || ""
+  };
+  if(normalized.done && !normalized.completedAt) normalized.completedAt = "";
+  return normalized;
+}
+function getTaskWorkingDate(task){ return task?.workingDate || task?.date || task?.plannedDate || todayStr() }
+function getTaskPlannedDate(task){ return task?.plannedDate || task?.date || todayStr() }
+function getCompletedDateKey(task){
+  if(!task?.completedAt) return "";
+  const key = String(task.completedAt).slice(0,10);
+  return parseDateKey(key) ? key : "";
+}
+function getTasks(){
+  try{
+    const list = JSON.parse(localStorage.getItem(TASK_KEY)||"[]");
+    if(!Array.isArray(list)) return [];
+    let changed = false;
+    const normalized = list.map(t => {
+      const n = normalizeTaskDates(t || {});
+      if(
+        n.plannedDate !== t?.plannedDate ||
+        n.workingDate !== t?.workingDate ||
+        n.date !== t?.date ||
+        Number(n.rolloverCount || 0) !== Number(t?.rolloverCount || 0) ||
+        (n.rolloverMode || "") !== (t?.rolloverMode || "")
+      ){
+        changed = true;
+      }
+      return n;
+    });
+    if(changed) localStorage.setItem(TASK_KEY, JSON.stringify(normalized));
+    return normalized;
+  }catch{
+    return [];
+  }
+}
 function saveTasks(a){ localStorage.setItem(TASK_KEY, JSON.stringify(a)) }
 function getMistakes(){ try{ return JSON.parse(localStorage.getItem(MISTAKE_KEY)||"[]") }catch{ return [] } }
 function saveMistakes(a){ localStorage.setItem(MISTAKE_KEY, JSON.stringify(a)) }
@@ -30,6 +80,37 @@ function getExerciseStats(){ try{ return JSON.parse(localStorage.getItem(EX_STAT
 function saveExerciseStats(o){ localStorage.setItem(EX_STATS_KEY, JSON.stringify(o)) }
 function getRecoState(){ try{ return JSON.parse(localStorage.getItem(UNIT_RECO_KEY)||"{}") }catch{ return {} } }
 function saveRecoState(o){ localStorage.setItem(UNIT_RECO_KEY, JSON.stringify(o)) }
+function getUnitLearningState(){ try{ return JSON.parse(localStorage.getItem(UNIT_LEARN_KEY)||"{}") }catch{ return {} } }
+function saveUnitLearningState(o){ localStorage.setItem(UNIT_LEARN_KEY, JSON.stringify(o)) }
+function getRolloverSettings(){
+  try{
+    const raw = JSON.parse(localStorage.getItem(ROLLOVER_SETTINGS_KEY) || "{}");
+    return {
+      enabled: !!raw.enabled,
+      notify: raw.notify !== false,
+      lastRunDate: raw.lastRunDate || "",
+      lastRunMoved: Number(raw.lastRunMoved || 0)
+    };
+  }catch{
+    return { enabled: false, notify: true, lastRunDate: "", lastRunMoved: 0 };
+  }
+}
+function saveRolloverSettings(s){
+  localStorage.setItem(ROLLOVER_SETTINGS_KEY, JSON.stringify({
+    enabled: !!s.enabled,
+    notify: s.notify !== false,
+    lastRunDate: s.lastRunDate || "",
+    lastRunMoved: Number(s.lastRunMoved || 0)
+  }));
+}
+function trackMetric(name, count = 1){
+  try{
+    const curr = JSON.parse(localStorage.getItem(METRICS_KEY) || "{}");
+    curr[name] = Number(curr[name] || 0) + Number(count || 1);
+    curr.updatedAt = new Date().toISOString();
+    localStorage.setItem(METRICS_KEY, JSON.stringify(curr));
+  }catch{}
+}
 
 function getBjtParts(date = new Date()){
   const parts = new Intl.DateTimeFormat("zh-CN", {
@@ -141,7 +222,7 @@ function keywordCoverage(user, ans){
 
 function splitAnswers(raw){
   return String(raw || "")
-    .split(/\s*(?:\/|;|，|,|或|或者|\bor\b)\s*/i)
+    .split(/\s*(?:\/|;|\||\n|或|或者|\bor\b)\s*/i)
     .map(a => normalizeAnswer(a))
     .filter(Boolean);
 }
@@ -151,6 +232,8 @@ function checkAnswerCorrect(userRaw, correctRaw){
   if(!correctRaw) return false;
   const user = normalizeAnswer(userRaw);
   if(!user) return false;
+  const correctWhole = normalizeAnswer(correctRaw);
+  if(correctWhole && user === correctWhole) return true;
 
   // correctRaw 可能含多个答案
   const answers = splitAnswers(correctRaw);
@@ -233,32 +316,101 @@ function taskRelatesToUnit(task, unit){
 
 /* Update study log for a given date based on tasks */
 function syncStudyLog(dateStr){
-  const tasks  = getTasks().filter(t => (t.date||todayStr()) === dateStr);
+  const tasks  = getTasks();
+  const doneByCompletionDate = tasks.filter(t => t.done && getCompletedDateKey(t) === dateStr).length;
   const log    = getStudyLog();
-  if(tasks.length){
-    log[dateStr] = { done: tasks.filter(t=>t.done).length, total: tasks.length };
+  const prev   = log[dateStr];
+  if(doneByCompletionDate > 0){
+    const done = doneByCompletionDate;
+    const total = doneByCompletionDate;
+    if(prev?.manual){
+      const mergedDone = Math.max(done, Number(prev.done || 0), 1);
+      const mergedTotal = Math.max(total, Number(prev.total || 0), mergedDone);
+      log[dateStr] = { ...prev, done: mergedDone, total: mergedTotal, manual: true };
+    } else {
+      log[dateStr] = { done, total, manual: false };
+    }
   } else {
-    delete log[dateStr];
+    if(prev?.manual){
+      const done = Math.max(Number(prev.done || 0), 1);
+      const total = Math.max(Number(prev.total || 0), done);
+      log[dateStr] = { ...prev, done, total, manual: true };
+    } else {
+      delete log[dateStr];
+    }
   }
   saveStudyLog(log);
 }
 
-/* ── FIX #5: 顺延未完成任务到今天 ── */
-function carryOverIncompleteTasks(){
+function syncStudyLogCloud(dateStr){
+  const log = getStudyLog();
+  if(window.syncStudyLogDay && log[dateStr]) syncStudyLogDay(dateStr, log[dateStr]);
+  if(window.deleteStudyLogDay && !log[dateStr]) deleteStudyLogDay(dateStr);
+}
+
+function toggleManualCheckin(dateStr){
+  const log = getStudyLog();
+  const cur = log[dateStr];
+  if(cur?.manual){
+    delete log[dateStr];
+    saveStudyLog(log);
+    syncStudyLog(dateStr);
+  } else {
+    const done = Math.max(Number(cur?.done || 0), 1);
+    const total = Math.max(Number(cur?.total || 0), done);
+    log[dateStr] = { done, total, manual: true, repaired: true };
+    saveStudyLog(log);
+  }
+  syncStudyLogCloud(dateStr);
+}
+
+function applyAutoRolloverIfNeeded(){
+  const settings = getRolloverSettings();
+  if(!settings.enabled) return;
   const today = todayStr();
+  if(settings.lastRunDate === today) return;
+
   const tasks = getTasks();
-  let changed = false;
+  const moved = [];
   tasks.forEach(t => {
-    if(!t.done && t.date && t.date < today){
+    const wd = getTaskWorkingDate(t);
+    if(!t.done && wd < today){
+      t.workingDate = today;
       t.date = today;
-      changed = true;
+      t.rolloverCount = Number(t.rolloverCount || 0) + 1;
+      t.rolloverMode = "auto";
+      moved.push(t);
     }
   });
-  if(changed){
-    saveTasks(tasks);
-    if(window.syncAllTasks) syncAllTasks(tasks);
-    syncStudyLog(today);
+
+  settings.lastRunDate = today;
+  settings.lastRunMoved = moved.length;
+  saveRolloverSettings(settings);
+
+  if(!moved.length) return;
+  saveTasks(tasks);
+  if(window.syncTask) moved.forEach(t => syncTask(t));
+  trackMetric("rollover_auto_runs", 1);
+  trackMetric("rollover_auto_count", moved.length);
+  autoRolloverNotice = settings.notify ? `已自动顺延 ${moved.length} 条未完成任务到今天` : "";
+}
+
+function getPlanningExecutionRate(tasks = getTasks()){
+  const today = todayStr();
+  const dueTasks = tasks.filter(t => getTaskPlannedDate(t) <= today);
+  if(!dueTasks.length) return 0;
+  const done = dueTasks.filter(t => t.done).length;
+  return Math.round((done / dueTasks.length) * 100);
+}
+
+function getLearningConsistency(log = getStudyLog(), days = 30){
+  const today = todayStr();
+  let active = 0;
+  for(let i = 0; i < days; i++){
+    const key = shiftDateKey(today, -i);
+    if(log[key]?.done > 0) active++;
   }
+  return Math.round((active / days) * 100);
 }
 
 function getUnitAccuracy(unitId){
@@ -300,19 +452,19 @@ function ensureRecommendedTasksForUnit(unit){
     done: false,
     detail: r.detail,
     date: nextDay,
+    plannedDate: nextDay,
+    workingDate: nextDay,
+    completedAt: "",
+    rolloverCount: 0,
+    rolloverMode: "",
     recommendedFromUnitId: unit.id,
     recommendedForDate: nextDay
   }));
 
   tasks.push(...recTasks);
   saveTasks(tasks);
-  syncStudyLog(nextDay);
   if(window.syncTask){
     recTasks.forEach(t => syncTask(t));
-  }
-  const logObj = getStudyLog();
-  if(window.syncStudyLogDay){
-    syncStudyLogDay(nextDay, logObj[nextDay] || { done: 0, total: 0 });
   }
   recoState[unit.id] = nextDay;
   saveRecoState(recoState);
@@ -342,8 +494,83 @@ function getAllUnits(){
   );
 }
 
+function getExerciseItems(unit){
+  if(!unit?.exercises?.length) return [];
+  const items = [];
+  unit.exercises.forEach((ex, exIndex) => {
+    if(Array.isArray(ex.items) && ex.items.length){
+      ex.items.forEach((item, itemIndex) => {
+        items.push({ exIndex, itemIndex, item });
+      });
+    } else {
+      items.push({ exIndex, itemIndex: 0, item: ex });
+    }
+  });
+  return items;
+}
+
+function buildExerciseKey(unitId, exIndex, itemIndex){
+  return `${unitId}::${exIndex}::${itemIndex}`;
+}
+
+function getUnitLearning(unitId){
+  const state = getUnitLearningState();
+  const u = state[unitId] || {};
+  return {
+    lectureDone: !!u.lectureDone,
+    exerciseKeys: Array.isArray(u.exerciseKeys) ? u.exerciseKeys : []
+  };
+}
+
+function saveUnitLearning(unitId, data){
+  const state = getUnitLearningState();
+  state[unitId] = {
+    lectureDone: !!data.lectureDone,
+    exerciseKeys: [...new Set(data.exerciseKeys || [])]
+  };
+  saveUnitLearningState(state);
+}
+
+function markLectureDone(unitId){
+  const curr = getUnitLearning(unitId);
+  curr.lectureDone = true;
+  saveUnitLearning(unitId, curr);
+}
+
+function markExerciseDone(unitId, exerciseKey){
+  if(!exerciseKey) return;
+  const curr = getUnitLearning(unitId);
+  if(!curr.exerciseKeys.includes(exerciseKey)){
+    curr.exerciseKeys.push(exerciseKey);
+    saveUnitLearning(unitId, curr);
+  }
+}
+
+function getUnitStructuredProgress(unit){
+  if(!unit?.id) return null;
+  const curr = getUnitLearning(unit.id);
+  const allItems = getExerciseItems(unit);
+  const totalExercises = allItems.length;
+  const doneExerciseCount = curr.exerciseKeys.filter(k => k.startsWith(`${unit.id}::`)).length;
+  const clampedDone = Math.min(doneExerciseCount, totalExercises);
+  const hasStructuredData = curr.lectureDone || clampedDone > 0;
+  if(!hasStructuredData) return null;
+
+  const lecturePart = curr.lectureDone ? 50 : 0;
+  const exercisePart = totalExercises > 0 ? Math.round((clampedDone / totalExercises) * 50) : 50;
+  const pct = Math.max(0, Math.min(100, lecturePart + exercisePart));
+  return {
+    pct,
+    lectureDone: curr.lectureDone,
+    exerciseDone: clampedDone,
+    exerciseTotal: totalExercises
+  };
+}
+
 function computeUnitProgress(unitId, bi, ui){
   const unit    = curriculum.books?.[bi]?.units?.[ui] || { id:unitId };
+  const structured = getUnitStructuredProgress(unit);
+  if(structured) return structured.pct;
   const tasks   = getTasks();
   const related = tasks.filter(t => taskRelatesToUnit(t, unit));
   if(!related.length) return 0;
@@ -480,7 +707,8 @@ function renderProfileCard(){
   const user      = getCurrentUserObj();
   const loggedIn  = !!user;
   const totalDone = tasks.filter(t => t.done).length;
-  const completionRate = getCompletionRate(tasks);
+  const continuity = getLearningConsistency(log);
+  const planRate = getPlanningExecutionRate(tasks);
 
   card.innerHTML = `
     <div class="profile-head">
@@ -507,8 +735,12 @@ function renderProfileCard(){
         <span class="profile-stat-key">累计完成任务</span>
       </div>
       <div class="profile-stat">
-        <span class="profile-stat-val">${completionRate}<small style="font-size:11px">%</small></span>
-        <span class="profile-stat-key">总体完成率</span>
+        <span class="profile-stat-val">${continuity}<small style="font-size:11px">%</small></span>
+        <span class="profile-stat-key">学习连续性</span>
+      </div>
+      <div class="profile-stat">
+        <span class="profile-stat-val">${planRate}<small style="font-size:11px">%</small></span>
+        <span class="profile-stat-key">计划执行率</span>
       </div>
       <div class="profile-stat">
         <span class="profile-stat-val">${streak}</span>
@@ -516,7 +748,7 @@ function renderProfileCard(){
       </div>
       <div class="profile-stat">
         <span class="profile-stat-val" style="font-size:13px;color:var(--accent-green)">${todayLog.done}/${todayLog.total||"—"}</span>
-        <span class="profile-stat-key">今日完成</span>
+        <span class="profile-stat-key">今日学习日志</span>
       </div>
     </div>`;
 
@@ -657,18 +889,22 @@ function makeTagEditable(tagEl, task){
 
 /* ── TODAY TASKS (home page widget) ── */
 function renderTodayTasks(){
-  carryOverIncompleteTasks(); // FIX #5: 自动顺延
-
   const el       = document.getElementById("today-tasks-card");
   const today    = todayStr();
   const tasks    = getTasks();
   const log      = getStudyLog();
   const weekDone = getLast7DaysDone(log);
-  const overallCompletion = getCompletionRate(tasks);
+  const planRate = getPlanningExecutionRate(tasks);
+  const settings = getRolloverSettings();
 
   const activeDate = el.dataset.activeDate || today;
-  const dayTasks   = tasks.filter(t => (t.date||today) === activeDate);
-  const done       = dayTasks.filter(t => t.done).length;
+  const dayTasks   = tasks.filter(t => getTaskWorkingDate(t) === activeDate);
+  const todayTasks = tasks.filter(t => getTaskWorkingDate(t) === today);
+  const overdueTasks = tasks.filter(t => !t.done && getTaskWorkingDate(t) < today);
+  const undone     = dayTasks.filter(t => !t.done).length;
+  const todayDone  = todayTasks.filter(t => t.done).length;
+  const activeLog  = log[activeDate];
+  const isManualChecked = !!activeLog?.manual;
 
   el.dataset.activeDate = activeDate;
 
@@ -677,9 +913,12 @@ function renderTodayTasks(){
       <span class="card-title">📅 今日学习任务</span>
       <span class="streak-badge">🔥 ${computeStreak(getStudyLog())}</span>
     </div>
+    ${autoRolloverNotice ? `<div style="font-size:11px;color:var(--accent-teal);margin-bottom:6px">${esc(autoRolloverNotice)}</div>` : ""}
     <div class="date-selector-row">
       <label class="form-label" style="font-size:11px;color:var(--text-dim);margin-right:6px">日期</label>
       <input class="form-input" id="ht-date" type="date" value="${activeDate}" style="width:auto;padding:4px 8px;font-size:12px"/>
+      <button class="btn-ghost btn-small" id="ht-checkin-toggle">${isManualChecked ? "取消补卡" : "补记打卡"}</button>
+      <button class="btn-ghost btn-small" id="ht-postpone-all" ${undone ? "" : "disabled"}>未完成→明天(${undone})</button>
     </div>
     <div class="add-task-row" style="margin-top:8px">
       <input class="add-task-input" id="ht-inp" type="text" placeholder="添加今日任务…"/>
@@ -689,28 +928,61 @@ function renderTodayTasks(){
       </select>
       <button class="add-task-btn" id="ht-add">＋</button>
     </div>
+    <div class="date-selector-row" style="margin-bottom:8px;gap:8px">
+      <label class="form-label" style="font-size:11px;color:var(--text-dim)">自动顺延</label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-sub)">
+        <input id="ht-auto-rollover" type="checkbox" ${settings.enabled ? "checked" : ""}/>
+        每日首次进入自动顺延逾期任务
+      </label>
+    </div>
     <div class="task-list" id="ht-list">
       ${dayTasks.length ? dayTasks.map(t => {
         // FIX #7: 复习任务显示原题信息
         const isReview = t.type === "复习" && t.reviewData;
+        const wd = getTaskWorkingDate(t);
+        const pd = getTaskPlannedDate(t);
         return `
           <div class="task-item ${t.done?"done":""}" data-tid="${esc(t.id)}">
             <div class="task-cb">${t.done?"✓":""}</div>
             <div class="task-body">
               <div class="task-title">${esc(t.title)}</div>
+              <div class="task-detail">计划 ${esc(pd)} · 执行 ${esc(wd)}${t.rolloverCount?` · 顺延${Number(t.rolloverCount)}次(${esc(t.rolloverMode || "manual")})`:""}</div>
               ${isReview ? `<div class="task-review-box">
                 <span class="task-review-q">📝 ${esc(t.reviewData.question?.slice(0,60) || "")}…</span>
                 <span class="task-review-ans">正确答案：${esc(t.reviewData.correctAnswer || "")}</span>
               </div>` : `<div class="task-detail">${esc(t.detail||t.time||"")}</div>`}
             </div>
             <span class="task-tag" data-t="${esc(t.type)}">${esc(t.type)}</span>
+            ${!t.done ? `<button class="btn-ghost btn-small" data-pp="${esc(t.id)}" style="margin-left:4px;flex-shrink:0">顺延+1天</button>` : ""}
             <button class="btn-danger btn-small" data-dt="${esc(t.id)}" style="margin-left:4px;flex-shrink:0">✕</button>
           </div>`;
       }).join("") : `<div class="task-empty">这一天还没有任务，先添加一个学习目标吧。</div>`}
     </div>
+    <div class="task-list" id="ht-overdue-list" style="margin-top:10px">
+      <div class="task-empty" style="border-style:solid">
+        逾期任务：${overdueTasks.length} 条
+        <button class="btn-ghost btn-small" id="ht-postpone-overdue" ${overdueTasks.length ? "" : "disabled"} style="margin-left:8px">逾期→明天</button>
+      </div>
+      ${overdueTasks.slice(0, 5).map(t => `
+        <div class="task-item" data-overdue-id="${esc(t.id)}">
+          <div class="task-cb"></div>
+          <div class="task-body">
+            <div class="task-title">${esc(t.title)}</div>
+            <div class="task-detail">计划 ${esc(getTaskPlannedDate(t))} · 当前 ${esc(getTaskWorkingDate(t))}</div>
+          </div>
+          <button class="btn-ghost btn-small" data-pp="${esc(t.id)}">顺延+1天</button>
+        </div>
+      `).join("")}
+    </div>
+    <div class="date-selector-row" style="margin-top:8px">
+      <label class="form-label" style="font-size:11px;color:var(--text-dim)">数据修复</label>
+      <input class="form-input" id="ht-repair-date" type="date" value="${activeDate}" style="width:auto;padding:4px 8px;font-size:12px"/>
+      <input class="form-input" id="ht-repair-done" type="number" min="1" value="1" style="width:74px;padding:4px 8px;font-size:12px"/>
+      <button class="btn-ghost btn-small" id="ht-repair-save">补录学习</button>
+    </div>
     <div class="task-summary-row">
       <div class="task-summary-box">
-        <span class="task-summary-val">${done}<small style="font-size:13px">/${dayTasks.length}</small></span>
+        <span class="task-summary-val">${todayDone}<small style="font-size:13px">/${todayTasks.length}</small></span>
         <div class="task-summary-key">今日完成</div>
       </div>
       <div class="task-summary-box">
@@ -718,10 +990,12 @@ function renderTodayTasks(){
         <div class="task-summary-key">近7天完成</div>
       </div>
       <div class="task-summary-box">
-        <span class="task-summary-val" style="color:var(--accent-rose)">${overallCompletion}%</span>
-        <div class="task-summary-key">总体完成率</div>
+        <span class="task-summary-val" style="color:var(--accent-rose)">${planRate}%</span>
+        <div class="task-summary-key">计划执行率</div>
       </div>
     </div>`;
+
+  autoRolloverNotice = "";
 
   // FIX #5: 标签内联编辑
   el.querySelectorAll(".task-tag[data-t]").forEach(tagEl => {
@@ -737,18 +1011,78 @@ function renderTodayTasks(){
     renderProfileCard();
   });
 
+  document.getElementById("ht-checkin-toggle")?.addEventListener("click", e => {
+    e.stopPropagation();
+    toggleManualCheckin(activeDate);
+    renderTodayTasks();
+    renderHeatmap();
+    renderProfileCard();
+  });
+
+  document.getElementById("ht-postpone-all")?.addEventListener("click", e => {
+    e.stopPropagation();
+    const ts = getTasks();
+    const nextDate = shiftDateKey(activeDate, 1);
+    const moved = [];
+    ts.forEach(t => {
+      if(getTaskWorkingDate(t) === activeDate && !t.done){
+        t.workingDate = nextDate;
+        t.date = nextDate;
+        t.rolloverCount = Number(t.rolloverCount || 0) + 1;
+        t.rolloverMode = "manual";
+        moved.push(t);
+      }
+    });
+    if(!moved.length) return;
+    saveTasks(ts);
+    trackMetric("rollover_manual_batch", moved.length);
+    if(window.syncTask) moved.forEach(t => syncTask(t));
+    renderTodayTasks();
+    renderHeatmap();
+    renderProfileCard();
+    renderCourseProgress();
+  });
+
+  document.getElementById("ht-postpone-overdue")?.addEventListener("click", e => {
+    e.stopPropagation();
+    const ts = getTasks();
+    const nextDate = shiftDateKey(today, 1);
+    const moved = [];
+    ts.forEach(t => {
+      if(!t.done && getTaskWorkingDate(t) < today){
+        t.workingDate = nextDate;
+        t.date = nextDate;
+        t.rolloverCount = Number(t.rolloverCount || 0) + 1;
+        t.rolloverMode = "manual";
+        moved.push(t);
+      }
+    });
+    if(!moved.length) return;
+    saveTasks(ts);
+    trackMetric("overdue_clear_batch", moved.length);
+    if(window.syncTask) moved.forEach(t => syncTask(t));
+    renderTodayTasks();
+    renderHeatmap();
+    renderProfileCard();
+    renderCourseProgress();
+  });
+
   el.querySelectorAll(".task-item[data-tid]").forEach(item =>
     item.addEventListener("click", e => {
-      if(e.target.closest("[data-dt]") || e.target.tagName === "SELECT") return;
+      if(e.target.closest("[data-dt]") || e.target.closest("[data-pp]") || e.target.tagName === "SELECT") return;
       const ts = getTasks();
       const t  = ts.find(x => x.id === item.dataset.tid);
       if(t){
+        const prevCompletedDate = getCompletedDateKey(t);
         t.done = !t.done;
+        t.completedAt = t.done ? new Date().toISOString() : "";
         saveTasks(ts);
-        syncStudyLog(t.date || today);
+        const nowCompletedDate = getCompletedDateKey(t);
+        if(prevCompletedDate) syncStudyLog(prevCompletedDate);
+        if(nowCompletedDate) syncStudyLog(nowCompletedDate);
         if(window.syncTask) syncTask(t);
-        const log = getStudyLog();
-        if(window.syncStudyLogDay) syncStudyLogDay(t.date||today, log[t.date||today]||{done:0,total:0});
+        if(prevCompletedDate) syncStudyLogCloud(prevCompletedDate);
+        if(nowCompletedDate) syncStudyLogCloud(nowCompletedDate);
         renderTodayTasks();
         renderHeatmap();
         renderProfileCard();
@@ -762,19 +1096,69 @@ function renderTodayTasks(){
       e.stopPropagation();
       const ts   = getTasks();
       const t    = ts.find(x => x.id === btn.dataset.dt);
-      const dStr = t?.date || today;
       if(window.deleteTask) deleteTask(btn.dataset.dt);
+      const completedDate = t ? getCompletedDateKey(t) : "";
       saveTasks(ts.filter(x => x.id !== btn.dataset.dt));
-      syncStudyLog(dStr);
-      const log = getStudyLog();
-      if(window.syncStudyLogDay && log[dStr]) syncStudyLogDay(dStr, log[dStr]);
-      if(window.deleteStudyLogDay && !log[dStr]) deleteStudyLogDay(dStr);
+      if(completedDate){
+        syncStudyLog(completedDate);
+        syncStudyLogCloud(completedDate);
+      }
       renderTodayTasks();
       renderHeatmap();
       renderProfileCard();
       renderCourseProgress();
     })
   );
+
+  el.querySelectorAll("[data-pp]").forEach(btn =>
+    btn.addEventListener("click", e => {
+      e.stopPropagation();
+      const ts = getTasks();
+      const t = ts.find(x => x.id === btn.dataset.pp);
+      if(!t || t.done) return;
+      const oldDate = getTaskWorkingDate(t);
+      const nextDate = shiftDateKey(oldDate, 1);
+      t.workingDate = nextDate;
+      t.date = nextDate;
+      t.rolloverCount = Number(t.rolloverCount || 0) + 1;
+      t.rolloverMode = "manual";
+      saveTasks(ts);
+      if(window.syncTask) syncTask(t);
+      trackMetric("rollover_manual_single", 1);
+      renderTodayTasks();
+      renderHeatmap();
+      renderProfileCard();
+      renderCourseProgress();
+    })
+  );
+
+  document.getElementById("ht-auto-rollover")?.addEventListener("change", e => {
+    const curr = getRolloverSettings();
+    curr.enabled = !!e.target.checked;
+    saveRolloverSettings(curr);
+    if(!curr.enabled) trackMetric("rollover_auto_disabled", 1);
+  });
+
+  document.getElementById("ht-repair-save")?.addEventListener("click", () => {
+    const d = document.getElementById("ht-repair-date")?.value || activeDate;
+    const doneVal = Number(document.getElementById("ht-repair-done")?.value || 1);
+    const done = Math.max(1, doneVal);
+    const logObj = getStudyLog();
+    const prev = logObj[d] || {};
+    logObj[d] = {
+      ...prev,
+      done: Math.max(Number(prev.done || 0), done),
+      total: Math.max(Number(prev.total || 0), done),
+      manual: true,
+      repaired: true
+    };
+    saveStudyLog(logObj);
+    syncStudyLogCloud(d);
+    trackMetric("repair_log_entries", 1);
+    renderTodayTasks();
+    renderHeatmap();
+    renderProfileCard();
+  });
 
   const addFn = () => {
     const inp  = document.getElementById("ht-inp");
@@ -783,13 +1167,22 @@ function renderTodayTasks(){
     if(!v) return;
     const ts   = getTasks();
     const date = el.dataset.activeDate || today;
-    const newTask = { id:"t-"+Date.now(), title:v, type:sel.value, done:false, detail:"", date };
+    const newTask = {
+      id:"t-"+Date.now(),
+      title:v,
+      type:sel.value,
+      done:false,
+      detail:"",
+      date,
+      plannedDate: date,
+      workingDate: date,
+      completedAt: "",
+      rolloverCount: 0,
+      rolloverMode: ""
+    };
     ts.push(newTask);
     saveTasks(ts);
-    syncStudyLog(date);
     if(window.syncTask) syncTask(newTask);
-    const log = getStudyLog();
-    if(window.syncStudyLogDay) syncStudyLogDay(date, log[date]||{done:0,total:0});
     inp.value = "";
     renderTodayTasks();
     renderHeatmap();
@@ -921,10 +1314,10 @@ function buildDashboard(){
   const today    = todayStr();
   const log      = getStudyLog();
   const tasks    = getTasks();
-  const todayTasks = tasks.filter(t => (t.date||today) === today);
+  const todayTasks = tasks.filter(t => getTaskWorkingDate(t) === today);
   const todayDone  = todayTasks.filter(t => t.done).length;
   const weekDone   = getLast7DaysDone(log);
-  const overallCompletion = getCompletionRate(tasks);
+  const overallCompletion = getPlanningExecutionRate(tasks);
   const focus = todayTasks[0]?.type || "待设置";
 
   // 热力图（按月，同 renderHeatmap 逻辑）
@@ -957,7 +1350,7 @@ function buildDashboard(){
     </div>
     <div class="dash-metric-box">
       <span class="dash-metric-val">${overallCompletion}%</span>
-      <span class="dash-metric-key">总体完成率</span>
+      <span class="dash-metric-key">计划执行率</span>
     </div>
     <div class="dash-metric-box">
       <span class="dash-metric-val">${esc(focus)}</span>
@@ -1014,7 +1407,7 @@ function buildDashboard(){
 
 function refreshDashboardList(el, dateStr){
   const tasks    = getTasks();
-  const dayTasks = tasks.filter(t => (t.date||todayStr()) === dateStr);
+  const dayTasks = tasks.filter(t => getTaskWorkingDate(t) === dateStr);
   const list     = el.querySelector("#dt-list");
   if(!list) return;
   list.innerHTML = dayTasks.map(t=>`
@@ -1041,12 +1434,16 @@ function refreshDashboardList(el, dateStr){
       const ts = getTasks();
       const t  = ts.find(x => x.id === item.dataset.tid);
       if(t){
+        const prevCompletedDate = getCompletedDateKey(t);
         t.done = !t.done;
+        t.completedAt = t.done ? new Date().toISOString() : "";
         saveTasks(ts);
-        syncStudyLog(t.date||todayStr());
+        const nowCompletedDate = getCompletedDateKey(t);
+        if(prevCompletedDate) syncStudyLog(prevCompletedDate);
+        if(nowCompletedDate) syncStudyLog(nowCompletedDate);
         if(window.syncTask) syncTask(t);
-        const logObj = getStudyLog();
-        if(window.syncStudyLogDay) syncStudyLogDay(t.date||todayStr(), logObj[t.date||todayStr()]||{done:0,total:0});
+        if(prevCompletedDate) syncStudyLogCloud(prevCompletedDate);
+        if(nowCompletedDate) syncStudyLogCloud(nowCompletedDate);
         refreshDashboardList(el, dateStr);
         refreshDashboardHeatmap(el);
         renderTodayTasks(); renderHeatmap(); renderProfileCard(); renderCourseProgress();
@@ -1058,13 +1455,13 @@ function refreshDashboardList(el, dateStr){
       e.stopPropagation();
       const ts = getTasks();
       const t  = ts.find(x => x.id === btn.dataset.dt);
-      const d  = t?.date || todayStr();
       if(window.deleteTask) deleteTask(btn.dataset.dt);
+      const completedDate = t ? getCompletedDateKey(t) : "";
       saveTasks(ts.filter(x => x.id !== btn.dataset.dt));
-      syncStudyLog(d);
-      const logObj = getStudyLog();
-      if(window.syncStudyLogDay && logObj[d]) syncStudyLogDay(d, logObj[d]);
-      if(window.deleteStudyLogDay && !logObj[d]) deleteStudyLogDay(d);
+      if(completedDate){
+        syncStudyLog(completedDate);
+        syncStudyLogCloud(completedDate);
+      }
       refreshDashboardList(el, dateStr);
       refreshDashboardHeatmap(el);
       renderTodayTasks(); renderHeatmap(); renderProfileCard(); renderCourseProgress();
@@ -1120,13 +1517,22 @@ function bindDashboardEvents(el){
     const v   = inp.value.trim();
     if(!v) return;
     const ts  = getTasks();
-    const newTask = { id:"t-"+Date.now(), title:v, type:sel.value, done:false, detail:"", date:activeDate };
+    const newTask = {
+      id:"t-"+Date.now(),
+      title:v,
+      type:sel.value,
+      done:false,
+      detail:"",
+      date:activeDate,
+      plannedDate: activeDate,
+      workingDate: activeDate,
+      completedAt: "",
+      rolloverCount: 0,
+      rolloverMode: ""
+    };
     ts.push(newTask);
     saveTasks(ts);
-    syncStudyLog(activeDate);
     if(window.syncTask) syncTask(newTask);
-    const logObj = getStudyLog();
-    if(window.syncStudyLogDay) syncStudyLogDay(activeDate, logObj[activeDate]||{done:0,total:0});
     inp.value = "";
     refreshDashboardList(el, activeDate);
     refreshDashboardHeatmap(el);
@@ -1179,6 +1585,7 @@ function bindCurriculumEvents(el){
 ══════════════════════════════════ */
 function buildUnitDetail(){
   const unit = getSelectedUnit();
+  const structured = getUnitStructuredProgress(unit) || { pct: 0, lectureDone: false, exerciseDone: 0, exerciseTotal: getExerciseItems(unit).length };
   return `
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
       <div>
@@ -1192,6 +1599,15 @@ function buildUnitDetail(){
         <button class="btn-ghost" onclick="showPage('curriculum')">← 返回课程</button>
         <button class="btn-ghost" onclick="exportUnit('lecture')">↓ 讲义</button>
         <button class="btn-ghost" onclick="exportUnit('exercises')">↓ 练习</button>
+      </div>
+    </div>
+
+    <div class="card card-pad" style="margin-top:10px">
+      <div class="card-hdr"><span class="section-kicker">Progress</span><h4>单元完成情况</h4></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <button class="btn-ghost btn-small" id="unit-mark-lecture-btn">${structured.lectureDone ? "✓ 讲义已完成" : "标记讲义已学完"}</button>
+        <span style="font-size:12px;color:var(--text-sub)">练习正确进度：${structured.exerciseDone}/${structured.exerciseTotal || 0}</span>
+        <span style="font-size:12px;color:var(--accent-teal)">单元进度：${structured.pct}%（讲义50% + 练习50%）</span>
       </div>
     </div>
 
@@ -1218,6 +1634,13 @@ function bindUnitDetailEvents(el){
     })
   );
 
+  el.querySelector("#unit-mark-lecture-btn")?.addEventListener("click", () => {
+    const unit = getSelectedUnit();
+    markLectureDone(unit.id);
+    renderInnerPage("unit-detail", document.getElementById("page-unit-detail"));
+    renderCourseProgress();
+  });
+
   /* FIX #6: 修复答案判定逻辑 */
   el.querySelectorAll(".grade-btn").forEach(btn =>
     btn.addEventListener("click", () => {
@@ -1237,6 +1660,9 @@ function bindUnitDetailEvents(el){
       resEl.textContent = ok ? "✓ 正确" : `✗ 错误（参考：${correct}）`;
       resEl.className   = "grade-result "+(ok?"correct":"wrong");
       const unit = getSelectedUnit();
+      if(ok){
+        markExerciseDone(unit.id, btn.dataset.eid || "");
+      }
       recordExerciseResult(unit.id, ok);
       if(ok){
         ensureRecommendedTasksForUnit(unit);
@@ -1260,7 +1686,7 @@ function bindUnitDetailEvents(el){
             correctAnswer: correct,
             reason:"",
             reflection:"",
-            tags:["待分析"],
+            tags:[],
             mastered: false,
             reviewCount: 0,
             lastReviewedAt: ""
@@ -1352,7 +1778,22 @@ function buildQBank(){
    MISTAKES
 ══════════════════════════════════ */
 const UNIT_OPTS    = getAllUnits().map(u=>`<option value="${esc(u.id)}">${esc(u.level)} ${esc(u.code)} ${esc(u.title)}</option>`).join("");
-const DEFAULT_TAGS = ["语法","词汇","听力","阅读","审题","表达","待分析"];
+const DEFAULT_TAGS = ["语法","词汇","听力","阅读","审题","表达"];
+
+function getMistakeTagLibrary(){
+  try{
+    const raw = JSON.parse(localStorage.getItem(MISTAKE_TAG_KEY) || "null");
+    if(Array.isArray(raw) && raw.length){
+      return [...new Set(raw.map(x => String(x || "").trim()).filter(Boolean))];
+    }
+  }catch{}
+  return [...DEFAULT_TAGS];
+}
+
+function saveMistakeTagLibrary(tags){
+  const cleaned = [...new Set((tags || []).map(x => String(x || "").trim()).filter(Boolean))];
+  localStorage.setItem(MISTAKE_TAG_KEY, JSON.stringify(cleaned.length ? cleaned : DEFAULT_TAGS));
+}
 
 function buildMistakes(){
   const ml = getMistakes().map(m => ({
@@ -1361,7 +1802,8 @@ function buildMistakes(){
     reviewCount: Number(m.reviewCount || 0),
     lastReviewedAt: m.lastReviewedAt || ""
   }));
-  const allTags = [...new Set([...DEFAULT_TAGS,...ml.flatMap(m=>m.tags||[])])];
+  const tagLibrary = getMistakeTagLibrary();
+  const allTags = [...new Set([...tagLibrary,...ml.flatMap(m=>m.tags||[])])];
   const activeRows = ml.filter(m => !m.mastered).length;
   const masteredRows = ml.filter(m => m.mastered).length;
   const tableHtml = ml.length===0
@@ -1414,7 +1856,7 @@ function buildMistakes(){
         <div><label class="form-label">反思</label><textarea class="form-textarea" id="mf-ref" placeholder="下次遇到同类题应该怎么做？"></textarea></div>
         <div><label class="form-label">标签</label>
           <div class="tag-filter-row" id="mf-tags">
-            ${DEFAULT_TAGS.map(t=>`<span class="tag-pill" style="border-color:var(--accent-purple);color:var(--accent-purple)" data-tag="${esc(t)}">${esc(t)}</span>`).join("")}
+            ${allTags.map(t=>`<span class="tag-pill" style="border-color:var(--accent-purple);color:var(--accent-purple)" data-tag="${esc(t)}">${esc(t)}</span>`).join("")}
           </div>
         </div>
         <div style="display:flex;gap:9px">
@@ -1440,6 +1882,11 @@ function buildMistakes(){
         <span class="tag-pill selected" style="background:var(--accent-purple);border-color:var(--accent-purple);color:white" data-filter="全部">全部</span>
         ${allTags.map(t=>`<span class="tag-pill" style="border-color:var(--accent-purple);color:var(--accent-purple)" data-filter="${esc(t)}">${esc(t)}</span>`).join("")}
       </div>
+      <div class="tag-filter-row" id="mis-tag-manager">
+        <input class="form-input" id="mis-tag-input" type="text" placeholder="自定义标签名" style="max-width:180px;padding:4px 8px;font-size:12px"/>
+        <button class="btn-ghost btn-small" id="mis-tag-add">添加标签</button>
+        <button class="btn-ghost btn-small" id="mis-tag-del-mode" data-on="0">删除标签模式：关</button>
+      </div>
       ${tableHtml}
       <p style="font-size:11px;color:var(--text-dim);margin-top:6px">💡 错误原因和反思列可直接点击编辑。点击标签旁“＋标签”可修改标签。点击“重练”会在下方进入即时复习区。</p>
       <div class="mistake-repractice-panel" id="mistake-repractice-panel">
@@ -1460,7 +1907,7 @@ function bindMistakeEvents(el){
     renderedPages.delete("mistakes");
     renderInnerPage("mistakes", document.getElementById("page-mistakes"));
   };
-  let selTags = ["待分析"];
+  let selTags = [];
   el.querySelectorAll("#mf-tags .tag-pill").forEach(p =>
     p.addEventListener("click", () => {
       const t = p.dataset.tag;
@@ -1482,7 +1929,7 @@ function bindMistakeEvents(el){
       correctAnswer: el.querySelector("#mf-cor").value,
       reason:        el.querySelector("#mf-reason").value,
       reflection:    el.querySelector("#mf-ref").value,
-      tags:          selTags.length ? selTags : ["待分析"],
+      tags:          selTags.length ? selTags : [],
       mastered:      false,
       reviewCount:   0,
       lastReviewedAt: ""
@@ -1527,7 +1974,7 @@ function bindMistakeEvents(el){
 
       // 弹出标签选择器
       const existing = new Set(m.tags || []);
-      const allOpts  = [...new Set([...DEFAULT_TAGS, ...m.tags])];
+      const allOpts  = [...new Set([...getMistakeTagLibrary(), ...m.tags])];
       const picker   = document.createElement("div");
       picker.style.cssText = "position:absolute;z-index:100;background:var(--bg-card);border:2px solid var(--border);border-radius:var(--card-r);padding:8px;box-shadow:var(--px-shadow);display:flex;flex-wrap:wrap;gap:4px;max-width:200px";
       allOpts.forEach(tag => {
@@ -1586,7 +2033,6 @@ function bindMistakeEvents(el){
       </div>
       <div class="mistake-repractice-q">题目：${esc(m.question)}</div>
       <div class="mistake-repractice-a">你的旧答案：${esc(m.myAnswer || "（空）")}</div>
-      <div class="mistake-repractice-a">参考答案：${esc(m.correctAnswer || "（未填写）")}</div>
       <div class="mistake-repractice-row">
         <input class="grade-input" id="mr-answer" type="text" placeholder="输入你的重练答案…"/>
         <button class="grade-btn" id="mr-submit">提交</button>
@@ -1613,7 +2059,7 @@ function bindMistakeEvents(el){
       if(!ok) target.myAnswer = user;
       saveMistakes(list);
       if(window.syncMistake) syncMistake(target);
-      res.textContent = ok ? "✓ 正确，已标记为已掌握" : `✗ 错误（参考：${target.correctAnswer || "无"}）`;
+      res.textContent = ok ? "✓ 正确，已标记为已掌握" : "✗ 错误，请再试一次";
       res.className = "grade-result " + (ok ? "correct" : "wrong");
       setTimeout(() => rerender(), 600);
     });
@@ -1655,11 +2101,42 @@ function bindMistakeEvents(el){
 
   el.querySelectorAll("#mis-filter .tag-pill").forEach(p =>
     p.addEventListener("click", () => {
+      const delMode = el.querySelector("#mis-tag-del-mode")?.dataset.on === "1";
+      if(delMode && p.dataset.filter !== "全部"){
+        const tag = p.dataset.filter;
+        const nextLib = getMistakeTagLibrary().filter(x => x !== tag);
+        saveMistakeTagLibrary(nextLib);
+        const ml = getMistakes();
+        ml.forEach(m => {
+          m.tags = (m.tags || []).filter(x => x !== tag);
+          if(window.syncMistake) syncMistake(m);
+        });
+        saveMistakes(ml);
+        rerender();
+        return;
+      }
       el.querySelectorAll("#mis-filter .tag-pill").forEach(x=>x.classList.remove("selected"));
       p.classList.add("selected");
       applyMistakeFilters();
     })
   );
+
+  el.querySelector("#mis-tag-add")?.addEventListener("click", () => {
+    const input = el.querySelector("#mis-tag-input");
+    const tag = input?.value?.trim();
+    if(!tag) return;
+    const next = [...new Set([...getMistakeTagLibrary(), tag])];
+    saveMistakeTagLibrary(next);
+    input.value = "";
+    rerender();
+  });
+
+  el.querySelector("#mis-tag-del-mode")?.addEventListener("click", () => {
+    const btn = el.querySelector("#mis-tag-del-mode");
+    const on = btn.dataset.on === "1";
+    btn.dataset.on = on ? "0" : "1";
+    btn.textContent = on ? "删除标签模式：关" : "删除标签模式：开";
+  });
   applyMistakeFilters();
 
   el.querySelector("#exp-mis")?.addEventListener("click", () => {
@@ -1768,17 +2245,17 @@ function renderLecture(unit){
 
 function renderExercises(unit){
   if(!unit.exercises?.length) return `<p style="color:var(--text-dim);font-size:13px">本单元练习题即将补充。</p>`;
-  return unit.exercises.map(ex => {
+  return unit.exercises.map((ex, exIndex) => {
     if(ex.passage) return `<div class="ex-block">
       <span class="ex-type">${esc(ex.type)}</span>
       <p class="ex-instruction">${esc(ex.instruction)}</p>
       <div class="ex-passage">${esc(ex.passage)}</div>
-      <div>${(ex.items||[]).map(item=>`
+      <div>${(ex.items||[]).map((item, itemIndex)=>`
         <div style="margin-bottom:8px">
           <span class="ex-blank-num">第 ${esc(item.blank)} 空</span>
           <div class="ex-grade-row" data-correct="${esc(item.answer)}">
             <input class="grade-input" type="text" placeholder="填写答案…"/>
-            <button class="grade-btn" data-prompt="${esc(ex.instruction||"填空")}" data-correct="${esc(item.answer)}">提交</button>
+            <button class="grade-btn" data-eid="${esc(buildExerciseKey(unit.id, exIndex, itemIndex))}" data-prompt="${esc(ex.instruction||"填空")}" data-correct="${esc(item.answer)}">提交</button>
             <span class="grade-result"></span>
           </div>
           <details class="ex-answer-box" style="margin-top:4px">
@@ -1794,12 +2271,12 @@ function renderExercises(unit){
     return `<div class="ex-block">
       <span class="ex-type">${esc(ex.type)}</span>
       <ol class="ex-list">
-        ${items.map(item=>`
+        ${items.map((item, itemIndex)=>`
           <li class="ex-item">
             <p class="ex-prompt">${esc(item.prompt)}</p>
             <div class="ex-grade-row" data-correct="${esc(item.answer||item.modelAnswer||"")}">
               <input class="grade-input" type="text" placeholder="填写答案…"/>
-              <button class="grade-btn" data-prompt="${esc(item.prompt)}" data-correct="${esc(item.answer||item.modelAnswer||"")}">提交</button>
+              <button class="grade-btn" data-eid="${esc(buildExerciseKey(unit.id, exIndex, itemIndex))}" data-prompt="${esc(item.prompt)}" data-correct="${esc(item.answer||item.modelAnswer||"")}">提交</button>
               <span class="grade-result"></span>
             </div>
             <details class="ex-answer-box" style="margin-top:4px">
@@ -1818,7 +2295,7 @@ function renderExercises(unit){
    INIT
 ══════════════════════════════════ */
 document.addEventListener("DOMContentLoaded", () => {
-  carryOverIncompleteTasks(); // FIX #5: 页面加载时自动顺延
+  applyAutoRolloverIfNeeded();
   renderTopbar();
   renderProfileCard();
   renderFeatureNav();
