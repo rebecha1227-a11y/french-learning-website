@@ -495,6 +495,7 @@ function renderProfileCard(){
       </div>
       <div class="profile-actions">
         ${loggedIn ? `<button class="profile-settings-btn" id="profile-settings-btn">设置</button>` : ""}
+        ${loggedIn ? `<button class="profile-settings-btn" id="profile-sync-btn">同步</button>` : ""}
         <button class="profile-auth-btn ${loggedIn ? "logout" : "login"}" id="profile-auth-btn" ${authActionPending ? "disabled" : ""}>
           ${authActionPending ? "处理中…" : (loggedIn ? "退出" : "登录")}
         </button>
@@ -522,6 +523,9 @@ function renderProfileCard(){
   card.querySelector("#profile-auth-btn")?.addEventListener("click", window.handleProfileAuthClick);
   card.querySelector("#profile-settings-btn")?.addEventListener("click", () => {
     if(typeof window.openProfileSettings === "function") window.openProfileSettings();
+  });
+  card.querySelector("#profile-sync-btn")?.addEventListener("click", () => {
+    if(typeof window.openCloudSyncPanel === "function") window.openCloudSyncPanel();
   });
 }
 
