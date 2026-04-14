@@ -196,36 +196,46 @@ window.saveProfileSettings = async function() {
     if (typeof renderCourseProgress === "function") renderCourseProgress();
     if (typeof renderCountdown === "function") renderCountdown();
 
+    // auth metadata 更新失败/超时不应阻断 user_settings 写入
     let authOk = false;
-    const authResp = await withTimeout(
-      db.auth.updateUser({ data: { username: nextName } }),
-      8000,
-      "保存超时，请检查网络后重试"
-    );
-    const { data: updated, error: authErr } = authResp || {};
-    if (!authErr) {
-      authOk = true;
-      if (updated?.user) currentUser = updated.user;
+    try {
+      const authResp = await withTimeout(
+        db.auth.updateUser({ data: { username: nextName } }),
+        15000,
+        "auth metadata 保存超时"
+      );
+      const { data: updated, error: authErr } = authResp || {};
+      if (!authErr) {
+        authOk = true;
+        if (updated?.user) currentUser = updated.user;
+      } else {
+        console.warn("⚠ auth metadata 保存失败:", authErr.message);
+      }
+    } catch (e) {
+      console.warn("⚠ auth metadata 保存异常:", e?.message || e);
     }
 
     let settingsOk = false;
     try {
       const settingsResp = await withTimeout(
         db.from("user_settings").upsert({
-        user_id: currentUser.id,
-        username: nextName,
-        updated_at: new Date().toISOString()
-      }, { onConflict: "user_id" }),
-        6000,
+          user_id: currentUser.id,
+          username: nextName,
+          updated_at: new Date().toISOString()
+        }, { onConflict: "user_id" }),
+        12000,
         "user_settings 保存超时"
       );
-      if (!settingsResp?.error) settingsOk = true;
-      else console.warn("⚠ user_settings 保存失败:", settingsResp.error.message);
+      if (!settingsResp?.error) {
+        settingsOk = true;
+      } else {
+        console.warn("⚠ user_settings 保存失败:", settingsResp.error.message);
+      }
     } catch (e) {
       console.warn("⚠ user_settings 保存异常:", e?.message || e);
     }
 
-    if (authOk || settingsOk) {
+    if (settingsOk || authOk) {
       setSettingsMsg("已保存", "var(--accent-teal)");
       setTimeout(() => window.closeProfileSettings(), 500);
     } else {
