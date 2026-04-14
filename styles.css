@@ -379,6 +379,36 @@ ul,ol{margin:0;padding-left:18px}
   margin-top: 2px;
 }
 
+.profile-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 2px;
+}
+
+.profile-level-chip,
+.profile-exam-chip {
+  display: inline-block;
+  border: 1px solid;
+  border-radius: 2px;
+  padding: 1px 6px;
+  font-size: 10px;
+  line-height: 1.2;
+}
+
+.profile-level-chip {
+  color: var(--accent-blue);
+  border-color: var(--accent-blue);
+  background: rgba(63, 98, 160, 0.08);
+}
+
+.profile-exam-chip {
+  color: var(--accent-gold);
+  border-color: var(--accent-gold);
+  background: rgba(184, 131, 46, 0.08);
+}
+
 .profile-actions {
   display: flex;
   flex-direction: column;
@@ -492,6 +522,58 @@ ul,ol{margin:0;padding-left:18px}
   gap: 3px;
   align-items: center;
   min-width: 80px;
+}
+
+.mistake-repractice-panel {
+  margin-top: 10px;
+  padding: 10px;
+  border: 2px dashed var(--border-light);
+  border-radius: var(--card-r);
+  background: var(--bg-inset);
+}
+
+.mistake-repractice-empty {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.mistake-repractice-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.mistake-repractice-status {
+  font-size: 11px;
+  color: var(--accent-teal);
+}
+
+.mistake-repractice-q {
+  font-size: 13px;
+  color: var(--text-main);
+  margin-bottom: 4px;
+}
+
+.mistake-repractice-a {
+  font-size: 12px;
+  color: var(--text-sub);
+  margin-bottom: 2px;
+}
+
+.mistake-repractice-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.mistake-repractice-meta {
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--text-dim);
 }
 
 /* 首页按钮激活态 */

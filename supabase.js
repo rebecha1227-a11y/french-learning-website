@@ -26,6 +26,8 @@ function withTimeout(promise, ms, timeoutMessage) {
    AUTH STATE
 ══════════════════════════════════════════════════════ */
 let currentUser = null;
+let taskExtraColsSupported = null;
+let mistakeExtraColsSupported = null;
 
 /* 暴露给 app.js 使用 */
 window.getUser    = () => currentUser;
@@ -180,45 +182,58 @@ window.saveProfileSettings = async function() {
   setSettingsMsg("保存中…", "var(--text-dim)");
 
   try {
-    const authResp = await withTimeout(
-      db.auth.updateUser({ data: { username: nextName } }),
-      10000,
-      "保存超时，请检查网络后重试"
-    );
-    const { data: updated, error: authErr } = authResp || {};
-    if (authErr) {
-      setSettingsMsg("保存失败：" + authErr.message);
-      return;
-    }
-    if (updated?.user) currentUser = updated.user;
-
+    // 先本地更新，避免“保存中”卡住影响体验
     localStorage.setItem("fq-username", nextName);
+    if (currentUser) {
+      currentUser = {
+        ...currentUser,
+        user_metadata: { ...(currentUser.user_metadata || {}), username: nextName }
+      };
+    }
     updateProfileUI();
     if (typeof renderTodayTasks === "function") renderTodayTasks();
     if (typeof renderHeatmap === "function") renderHeatmap();
     if (typeof renderCourseProgress === "function") renderCourseProgress();
     if (typeof renderCountdown === "function") renderCountdown();
-    setSettingsMsg("已保存", "var(--accent-teal)");
 
-    // 用户体验优先：不阻塞弹窗关闭，后台尝试写 user_settings
-    withTimeout(
-      db.from("user_settings").upsert({
+    let authOk = false;
+    const authResp = await withTimeout(
+      db.auth.updateUser({ data: { username: nextName } }),
+      8000,
+      "保存超时，请检查网络后重试"
+    );
+    const { data: updated, error: authErr } = authResp || {};
+    if (!authErr) {
+      authOk = true;
+      if (updated?.user) currentUser = updated.user;
+    }
+
+    let settingsOk = false;
+    try {
+      const settingsResp = await withTimeout(
+        db.from("user_settings").upsert({
         user_id: currentUser.id,
         username: nextName,
         updated_at: new Date().toISOString()
       }, { onConflict: "user_id" }),
-      6000,
-      "user_settings 保存超时"
-    ).then(({ error: settingsErr }) => {
-      if (settingsErr) console.warn("⚠ user_settings 保存失败:", settingsErr.message);
-    }).catch((e) => {
+        6000,
+        "user_settings 保存超时"
+      );
+      if (!settingsResp?.error) settingsOk = true;
+      else console.warn("⚠ user_settings 保存失败:", settingsResp.error.message);
+    } catch (e) {
       console.warn("⚠ user_settings 保存异常:", e?.message || e);
-    });
+    }
 
-    setTimeout(() => window.closeProfileSettings(), 500);
+    if (authOk || settingsOk) {
+      setSettingsMsg("已保存", "var(--accent-teal)");
+      setTimeout(() => window.closeProfileSettings(), 500);
+    } else {
+      setSettingsMsg("本地已保存，云端同步失败（可稍后重试）", "var(--accent-gold)");
+    }
   } catch (err) {
     console.error("❌ 保存用户名失败:", err);
-    setSettingsMsg(err?.message || "保存失败，请稍后重试");
+    setSettingsMsg("本地已保存，云端同步失败：" + (err?.message || "请稍后重试"));
   } finally {
     if (btn) {
       btn.disabled = false;
@@ -296,14 +311,13 @@ window.doLogout = async function() {
   try {
     const logoutResult = await withTimeout(
       db.auth.signOut(),
-      10000,
+      8000,
       "退出超时，请检查网络后重试"
     );
     const { error } = logoutResult || {};
     if (error) {
       console.error("❌ 退出失败:", error.message);
-      alert("退出失败：" + error.message);
-      return false;
+      return { ok: false, reason: error.message };
     }
     currentUser = null;
     updateProfileUI();
@@ -311,11 +325,10 @@ window.doLogout = async function() {
     if (typeof renderHeatmap === "function") renderHeatmap();
     if (typeof renderCourseProgress === "function") renderCourseProgress();
     if (typeof renderCountdown === "function") renderCountdown();
-    return true;
+    return { ok: true };
   } catch (err) {
     console.error("❌ 退出异常:", err);
-    alert(err?.message || "退出失败，请重试。");
-    return false;
+    return { ok: false, reason: err?.message || "退出失败" };
   }
 };
 
@@ -338,7 +351,9 @@ async function pullAllFromCloud() {
   if (tasks) {
     const local = tasks.map(r => ({
       id: r.id, title: r.title, detail: r.detail, type: r.type,
-      done: r.done, date: r.date, unitId: r.unit_id
+      done: r.done, date: r.date, unitId: r.unit_id,
+      recommendedFromUnitId: r.recommended_from_unit_id || r.recommendedFromUnitId || "",
+      recommendedForDate: r.recommended_for_date || r.recommendedForDate || ""
     }));
     localStorage.setItem("fq-tasks-v3", JSON.stringify(local));
   }
@@ -349,7 +364,10 @@ async function pullAllFromCloud() {
     const local = mistakes.map(r => ({
       id: r.id, date: r.date, source: r.source, question: r.question,
       myAnswer: r.my_answer, correctAnswer: r.correct_answer,
-      reason: r.reason, reflection: r.reflection, tags: r.tags || []
+      reason: r.reason, reflection: r.reflection, tags: r.tags || [],
+      mastered: !!(r.mastered || r.is_mastered),
+      reviewCount: Number(r.review_count || r.reviewCount || 0),
+      lastReviewedAt: r.last_reviewed_at || r.lastReviewedAt || ""
     }));
     localStorage.setItem("fq-mistakes-v3", JSON.stringify(local));
   }
@@ -385,19 +403,68 @@ async function pullAllFromCloud() {
    app.js 在每次写 localStorage 后调用这些函数
 ══════════════════════════════════════════════════════ */
 
+function buildTaskBaseRow(task) {
+  return {
+    id: task.id,
+    user_id: currentUser.id,
+    title: task.title,
+    detail: task.detail || "",
+    type: task.type || "讲义",
+    done: task.done,
+    date: task.date,
+    unit_id: task.unitId || ""
+  };
+}
+
+function buildTaskExtraRow(task) {
+  return {
+    ...buildTaskBaseRow(task),
+    recommended_from_unit_id: task.recommendedFromUnitId || null,
+    recommended_for_date: task.recommendedForDate || null
+  };
+}
+
+function buildMistakeBaseRow(m) {
+  return {
+    id: m.id,
+    user_id: currentUser.id,
+    date: m.date,
+    source: m.source || "",
+    question: m.question,
+    my_answer: m.myAnswer || "",
+    correct_answer: m.correctAnswer || "",
+    reason: m.reason || "",
+    reflection: m.reflection || "",
+    tags: m.tags || []
+  };
+}
+
+function buildMistakeExtraRow(m) {
+  return {
+    ...buildMistakeBaseRow(m),
+    mastered: !!m.mastered,
+    review_count: Number(m.reviewCount || 0),
+    last_reviewed_at: m.lastReviewedAt || null
+  };
+}
+
 /* 同步单条 task（upsert） */
 window.syncTask = async function(task) {
   if (!currentUser) return;
-  await db.from("tasks").upsert({
-    id:       task.id,
-    user_id:  currentUser.id,
-    title:    task.title,
-    detail:   task.detail || "",
-    type:     task.type   || "讲义",
-    done:     task.done,
-    date:     task.date,
-    unit_id:  task.unitId || ""
-  }, { onConflict: "id" });
+  if (taskExtraColsSupported !== false) {
+    const { error } = await db.from("tasks").upsert(buildTaskExtraRow(task), { onConflict: "id" });
+    if (!error) {
+      taskExtraColsSupported = true;
+      return;
+    }
+    if (!/column|schema/i.test(error.message || "")) {
+      console.warn("⚠ syncTask 失败:", error.message);
+      return;
+    }
+    taskExtraColsSupported = false;
+  }
+  const { error } = await db.from("tasks").upsert(buildTaskBaseRow(task), { onConflict: "id" });
+  if (error) console.warn("⚠ syncTask(降级) 失败:", error.message);
 };
 
 /* 删除单条 task */
@@ -412,28 +479,39 @@ window.syncAllTasks = async function(tasks) {
   /* 先删该用户所有 tasks，再批量插入 */
   await db.from("tasks").delete().eq("user_id", currentUser.id);
   if (!tasks.length) return;
-  await db.from("tasks").insert(tasks.map(t => ({
-    id: t.id, user_id: currentUser.id,
-    title: t.title, detail: t.detail || "", type: t.type || "讲义",
-    done: t.done, date: t.date, unit_id: t.unitId || ""
-  })));
+  if (taskExtraColsSupported !== false) {
+    const { error } = await db.from("tasks").insert(tasks.map(buildTaskExtraRow));
+    if (!error) {
+      taskExtraColsSupported = true;
+      return;
+    }
+    if (!/column|schema/i.test(error.message || "")) {
+      console.warn("⚠ syncAllTasks 失败:", error.message);
+      return;
+    }
+    taskExtraColsSupported = false;
+  }
+  const { error } = await db.from("tasks").insert(tasks.map(buildTaskBaseRow));
+  if (error) console.warn("⚠ syncAllTasks(降级) 失败:", error.message);
 };
 
 /* 同步单条 mistake */
 window.syncMistake = async function(m) {
   if (!currentUser) return;
-  await db.from("mistakes").upsert({
-    id:             m.id,
-    user_id:        currentUser.id,
-    date:           m.date,
-    source:         m.source || "",
-    question:       m.question,
-    my_answer:      m.myAnswer || "",
-    correct_answer: m.correctAnswer || "",
-    reason:         m.reason || "",
-    reflection:     m.reflection || "",
-    tags:           m.tags || []
-  }, { onConflict: "id" });
+  if (mistakeExtraColsSupported !== false) {
+    const { error } = await db.from("mistakes").upsert(buildMistakeExtraRow(m), { onConflict: "id" });
+    if (!error) {
+      mistakeExtraColsSupported = true;
+      return;
+    }
+    if (!/column|schema/i.test(error.message || "")) {
+      console.warn("⚠ syncMistake 失败:", error.message);
+      return;
+    }
+    mistakeExtraColsSupported = false;
+  }
+  const { error } = await db.from("mistakes").upsert(buildMistakeBaseRow(m), { onConflict: "id" });
+  if (error) console.warn("⚠ syncMistake(降级) 失败:", error.message);
 };
 
 /* 删除单条 mistake */
