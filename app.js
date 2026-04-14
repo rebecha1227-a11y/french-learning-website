@@ -22,8 +22,63 @@ function saveExamDate(d){ localStorage.setItem(EXAM_KEY, d) }
 function getStudyLog(){ try{ return JSON.parse(localStorage.getItem(STUDY_LOG_KEY)||"{}") }catch{ return {} } }
 function saveStudyLog(o){ localStorage.setItem(STUDY_LOG_KEY, JSON.stringify(o)) }
 
-/* today's date as YYYY-MM-DD */
-function todayStr(){ return new Date().toISOString().slice(0,10) }
+/* ── FIX #4: 北京时间 today ── */
+function getTodayBJT(){
+  return new Date(new Date().toLocaleString("en-US", {timeZone:"Asia/Shanghai"}))
+    .toISOString().slice(0,10);
+}
+
+/* today's date as YYYY-MM-DD（统一用北京时间） */
+function todayStr(){ return getTodayBJT(); }
+
+/* ── FIX #6: 答案比对核心函数 ── */
+function editDistance(a, b){
+  const m = a.length, n = b.length;
+  const dp = Array.from({length:m+1}, (_,i) => Array.from({length:n+1}, (_,j) => i===0?j:j===0?i:0));
+  for(let i=1;i<=m;i++) for(let j=1;j<=n;j++){
+    dp[i][j] = a[i-1]===b[j-1] ? dp[i-1][j-1]
+      : 1 + Math.min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1]);
+  }
+  return dp[m][n];
+}
+
+function strSimilarity(a, b){
+  const longer = a.length >= b.length ? a : b;
+  const shorter = a.length >= b.length ? b : a;
+  if(!longer.length) return 1.0;
+  return (longer.length - editDistance(longer, shorter)) / longer.length;
+}
+
+function normalizeAnswer(s){
+  return String(s || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")   // 去掉变音符
+    .replace(/[.,!?;:'"()\-–—«»]/g, "") // 去掉标点
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/* 判断用户答案是否正确（支持多种答案 / 相近匹配） */
+function checkAnswerCorrect(userRaw, correctRaw){
+  if(!correctRaw) return false;
+  const user = normalizeAnswer(userRaw);
+  if(!user) return false;
+
+  // correctRaw 可能含多个答案，用 / 或 , 分隔
+  const answers = String(correctRaw).split(/[/,]/).map(a => normalizeAnswer(a));
+
+  for(const ans of answers){
+    if(!ans) continue;
+    // 完全相等（标点归一化后）
+    if(user === ans) return true;
+    // 相似度 > 0.82（允许1-2个字母拼写错误）
+    if(strSimilarity(user, ans) > 0.82) return true;
+    // 用户答案包含标准答案 or 反之（针对短答案）
+    if(ans.length <= 6 && (user.includes(ans) || ans.includes(user))) return true;
+  }
+  return false;
+}
 
 function normalizeForMatch(s){
   return String(s || "")
@@ -67,7 +122,7 @@ function getCompletionRate(tasks = getTasks()){
 function getLast7DaysDone(log = getStudyLog()){
   let sum = 0;
   for(let i = 0; i < 7; i++){
-    const d = new Date();
+    const d = new Date(new Date().toLocaleString("en-US",{timeZone:"Asia/Shanghai"}));
     d.setDate(d.getDate() - i);
     const key = d.toISOString().slice(0,10);
     const entry = log[key];
@@ -98,6 +153,23 @@ function syncStudyLog(dateStr){
   saveStudyLog(log);
 }
 
+/* ── FIX #5: 顺延未完成任务到今天 ── */
+function carryOverIncompleteTasks(){
+  const today = todayStr();
+  const tasks = getTasks();
+  let changed = false;
+  tasks.forEach(t => {
+    if(!t.done && t.date && t.date < today){
+      t.date = today;
+      changed = true;
+    }
+  });
+  if(changed){
+    saveTasks(tasks);
+    syncStudyLog(today);
+  }
+}
+
 function getAllUnits(){
   return curriculum.books.flatMap((b,bi) =>
     b.units.map((u,ui) => ({
@@ -121,7 +193,9 @@ function getSelectedUnit(){ return getAllUnits().find(u => u.id === selectedUnit
 
 function getCountdownDays(){
   const examDate = getExamDate();
-  const d = new Date(examDate) - new Date(new Date().toDateString());
+  const now = new Date(new Date().toLocaleString("en-US",{timeZone:"Asia/Shanghai"}));
+  const exam = new Date(examDate);
+  const d = exam - new Date(now.toDateString());
   return Math.max(0, Math.ceil(d/86400000));
 }
 
@@ -136,13 +210,8 @@ const NAV_ITEMS = [
 
 /* ── PAGE ROUTING ── */
 window.showPage = function(pageId){
-  /* 1. Hide all pages */
   document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
-
-  /* 2. Wipe every inner-page's HTML so stale content never bleeds through */
   document.querySelectorAll(".inner-page").forEach(p => { p.innerHTML = ""; });
-
-  /* 3. Reset all nav highlights */
   document.querySelectorAll(".tnav-btn, .tnav-home").forEach(b => b.classList.remove("active"));
 
   if(pageId === "home"){
@@ -152,7 +221,6 @@ window.showPage = function(pageId){
     return;
   }
 
-  /* 4. Highlight the matching topbar button */
   document.querySelectorAll(".tnav-btn").forEach(b => {
     b.classList.toggle("active", b.dataset.page === pageId);
   });
@@ -166,7 +234,6 @@ window.showPage = function(pageId){
 
 function renderInnerPage(id, el){
   const item   = NAV_ITEMS.find(n => n.id === id) || { label:id, desc:"" };
-  /* unit-detail gets its own breadcrumb, no generic header */
   const showHeader = id !== "unit-detail";
   const header = showHeader ? `<div class="inner-header">
     <button class="inner-back-btn" onclick="showPage('home')">← 首页</button>
@@ -195,7 +262,7 @@ function renderTopbar(){
   document.getElementById("topbar-days").textContent = getCountdownDays();
 
   const home = document.createElement("button");
-  home.className = "tnav-home active"; /* start active on home */
+  home.className = "tnav-home active";
   home.textContent = "⌂ 首页";
   home.onclick = () => showPage("home");
   nav.appendChild(home);
@@ -208,6 +275,29 @@ function renderTopbar(){
     btn.onclick = () => showPage(item.id);
     nav.appendChild(btn);
   });
+}
+
+/* ── FIX #3: 连续打卡 streak ── */
+/* 从昨天开始往前数，再单独判断今天是否打卡 */
+function computeStreak(log){
+  const bjt = new Date(new Date().toLocaleString("en-US",{timeZone:"Asia/Shanghai"}));
+  const todayKey = bjt.toISOString().slice(0,10);
+
+  let streak = 0;
+  // 先从昨天往前检查
+  const d = new Date(bjt);
+  d.setDate(d.getDate() - 1);
+  while(true){
+    const key = d.toISOString().slice(0,10);
+    const entry = log[key];
+    if(entry && entry.done > 0){ streak++; d.setDate(d.getDate()-1); }
+    else break;
+  }
+  // 今天若已打卡，streak +1
+  const todayEntry = log[todayKey];
+  if(todayEntry && todayEntry.done > 0) streak++;
+
+  return streak > 0 ? streak+" 天" : "0 天";
 }
 
 /* ── PROFILE CARD ── */
@@ -232,7 +322,8 @@ function renderProfileCard(){
       <div class="profile-avatar">${loggedIn ? "已登录" : "访客"}</div>
       <div class="profile-identity">
         <span class="profile-name vt">${esc(username)}</span>
-        <p class="profile-meta">A1 → B1 · TCF Canada ${esc(examDate)}</p>
+        <p class="profile-meta">A1 → B1</p>
+        <p class="profile-meta" style="font-size:11px;margin-top:1px">🎯 TCF Canada ${esc(examDate)}</p>
         <p class="profile-email">${esc(user?.email || "未登录，本地模式")}</p>
       </div>
       <div class="profile-actions">
@@ -267,49 +358,50 @@ function renderProfileCard(){
   });
 }
 
+/* ── FIX #1: 退出登录——即使 Supabase 超时也强制清除本地状态 ── */
 window.handleProfileAuthClick = async function(event){
   const btn = event?.currentTarget || event?.target;
   if(typeof window.isLoggedIn === "function" && window.isLoggedIn()){
     if(btn){
       btn.disabled = true;
-      btn.textContent = "退出中";
+      btn.textContent = "退出中…";
     }
     try {
       if(typeof window.doLogout === "function"){
-        const ok = await window.doLogout();
-        if(!ok && btn){
-          btn.disabled = false;
-          btn.textContent = "退出";
+        // 给 doLogout 8 秒，超时就强制本地退出
+        const result = await Promise.race([
+          window.doLogout(),
+          new Promise(resolve => setTimeout(() => resolve("timeout"), 8000))
+        ]);
+        if(result === "timeout"){
+          console.warn("退出超时，强制本地清除");
+          forceLocalLogout();
         }
-      } else if(btn){
-        btn.disabled = false;
-        btn.textContent = "退出";
+      } else {
+        forceLocalLogout();
       }
-    } catch {
-      if(btn){
-        btn.disabled = false;
-        btn.textContent = "退出";
-      }
+    } catch(e) {
+      console.error("退出异常:", e);
+      forceLocalLogout();
     }
     return;
   }
   if(typeof window.openAuthModal === "function") window.openAuthModal();
 };
 
-/* compute streak from study log */
-function computeStreak(log){
-  let streak = 0;
-  const d = new Date();
-  while(true){
-    const key = d.toISOString().slice(0,10);
-    const entry = log[key];
-    if(entry && entry.done > 0){ streak++; d.setDate(d.getDate()-1); }
-    else break;
-  }
-  return streak > 0 ? streak+" 天" : "0 天";
+function forceLocalLogout(){
+  // 清除认证相关 localStorage，保留学习数据
+  ["supabase.auth.token", "sb-kpzkcxuvqxcvlkcffoxm-auth-token"].forEach(k => {
+    try{ localStorage.removeItem(k); }catch{}
+  });
+  // 同时尝试清除所有 supabase session key
+  Object.keys(localStorage).forEach(k => {
+    if(k.startsWith("sb-") && k.endsWith("-auth-token")) localStorage.removeItem(k);
+  });
+  // 强制刷新页面（最稳妥的方式）
+  window.location.reload();
 }
 
-/* ── FEATURE NAV GRID (FIX #2: cards navigate correctly) ── */
 const ICON_MAP = {
   dashboard:     { icon:"◉", color:"var(--accent-blue)"   },
   curriculum:    { icon:"✦", color:"var(--accent-gold)"   },
@@ -328,14 +420,63 @@ function renderFeatureNav(){
       <span class="feature-nav-desc">${esc(item.desc)}</span>
     </button>`;
   }).join("");
-  /* FIX #2: each card navigates ONLY to its own page */
   g.querySelectorAll(".feature-nav-btn").forEach(b =>
     b.addEventListener("click", () => showPage(b.dataset.page))
   );
 }
 
+/* ── FIX #5: 标签内联编辑 ── */
+function makeTagEditable(tagEl, task){
+  tagEl.style.cursor = "pointer";
+  tagEl.title = "点击修改标签";
+  tagEl.addEventListener("click", e => {
+    e.stopPropagation();
+    const options = ["讲义","练习","复盘","真题","视频","复习"];
+    const sel = document.createElement("select");
+    sel.style.cssText = "padding:2px 4px;font-size:12px;border:1px solid var(--border);border-radius:2px;background:var(--bg-inset);color:var(--text-main);cursor:pointer";
+    options.forEach(opt => {
+      const o = document.createElement("option");
+      o.value = opt; o.textContent = opt;
+      if(opt === task.type) o.selected = true;
+      sel.appendChild(o);
+    });
+    tagEl.replaceWith(sel);
+    sel.focus();
+    const commit = () => {
+      const ts = getTasks();
+      const t = ts.find(x => x.id === task.id);
+      if(t){ t.type = sel.value; saveTasks(ts); }
+      task.type = sel.value;
+      const newTag = document.createElement("span");
+      newTag.className = "task-tag";
+      newTag.dataset.t = sel.value;
+      newTag.textContent = sel.value;
+      sel.replaceWith(newTag);
+      makeTagEditable(newTag, task);
+      renderTodayTasks();
+      renderProfileCard();
+    };
+    sel.addEventListener("change", commit);
+    sel.addEventListener("blur", () => {
+      // 如果没有 change，还原
+      setTimeout(() => {
+        if(sel.parentNode){
+          const newTag = document.createElement("span");
+          newTag.className = "task-tag";
+          newTag.dataset.t = task.type;
+          newTag.textContent = task.type;
+          sel.replaceWith(newTag);
+          makeTagEditable(newTag, task);
+        }
+      }, 150);
+    });
+  });
+}
+
 /* ── TODAY TASKS (home page widget) ── */
 function renderTodayTasks(){
+  carryOverIncompleteTasks(); // FIX #5: 自动顺延
+
   const el       = document.getElementById("today-tasks-card");
   const today    = todayStr();
   const tasks    = getTasks();
@@ -343,7 +484,6 @@ function renderTodayTasks(){
   const weekDone = getLast7DaysDone(log);
   const overallCompletion = getCompletionRate(tasks);
 
-  /* tasks for currently selected date (stored in el dataset or today) */
   const activeDate = el.dataset.activeDate || today;
   const dayTasks   = tasks.filter(t => (t.date||today) === activeDate);
   const done       = dayTasks.filter(t => t.done).length;
@@ -368,16 +508,23 @@ function renderTodayTasks(){
       <button class="add-task-btn" id="ht-add">＋</button>
     </div>
     <div class="task-list" id="ht-list">
-      ${dayTasks.length ? dayTasks.map(t => `
-        <div class="task-item ${t.done?"done":""}" data-tid="${esc(t.id)}">
-          <div class="task-cb">${t.done?"✓":""}</div>
-          <div class="task-body">
-            <div class="task-title">${esc(t.title)}</div>
-            <div class="task-detail">${esc(t.detail||t.time||"")}</div>
-          </div>
-          <span class="task-tag" data-t="${esc(t.type)}">${esc(t.type)}</span>
-          <button class="btn-danger btn-small" data-dt="${esc(t.id)}" style="margin-left:4px;flex-shrink:0">✕</button>
-        </div>`).join("") : `<div class="task-empty">这一天还没有任务，先添加一个学习目标吧。</div>`}
+      ${dayTasks.length ? dayTasks.map(t => {
+        // FIX #7: 复习任务显示原题信息
+        const isReview = t.type === "复习" && t.reviewData;
+        return `
+          <div class="task-item ${t.done?"done":""}" data-tid="${esc(t.id)}">
+            <div class="task-cb">${t.done?"✓":""}</div>
+            <div class="task-body">
+              <div class="task-title">${esc(t.title)}</div>
+              ${isReview ? `<div class="task-review-box">
+                <span class="task-review-q">📝 ${esc(t.reviewData.question?.slice(0,60) || "")}…</span>
+                <span class="task-review-ans">正确答案：${esc(t.reviewData.correctAnswer || "")}</span>
+              </div>` : `<div class="task-detail">${esc(t.detail||t.time||"")}</div>`}
+            </div>
+            <span class="task-tag" data-t="${esc(t.type)}">${esc(t.type)}</span>
+            <button class="btn-danger btn-small" data-dt="${esc(t.id)}" style="margin-left:4px;flex-shrink:0">✕</button>
+          </div>`;
+      }).join("") : `<div class="task-empty">这一天还没有任务，先添加一个学习目标吧。</div>`}
     </div>
     <div class="task-summary-row">
       <div class="task-summary-box">
@@ -394,7 +541,13 @@ function renderTodayTasks(){
       </div>
     </div>`;
 
-  /* date change → re-render for that date */
+  // FIX #5: 标签内联编辑
+  el.querySelectorAll(".task-tag[data-t]").forEach(tagEl => {
+    const tid = tagEl.closest("[data-tid]")?.dataset.tid;
+    const task = dayTasks.find(t => t.id === tid);
+    if(task) makeTagEditable(tagEl, task);
+  });
+
   document.getElementById("ht-date").addEventListener("change", e => {
     el.dataset.activeDate = e.target.value;
     renderTodayTasks();
@@ -402,10 +555,9 @@ function renderTodayTasks(){
     renderProfileCard();
   });
 
-  /* toggle done */
   el.querySelectorAll(".task-item[data-tid]").forEach(item =>
     item.addEventListener("click", e => {
-      if(e.target.closest("[data-dt]")) return;
+      if(e.target.closest("[data-dt]") || e.target.tagName === "SELECT") return;
       const ts = getTasks();
       const t  = ts.find(x => x.id === item.dataset.tid);
       if(t){
@@ -423,7 +575,6 @@ function renderTodayTasks(){
     })
   );
 
-  /* delete */
   el.querySelectorAll("[data-dt]").forEach(btn =>
     btn.addEventListener("click", e => {
       e.stopPropagation();
@@ -443,7 +594,6 @@ function renderTodayTasks(){
     })
   );
 
-  /* add */
   const addFn = () => {
     const inp  = document.getElementById("ht-inp");
     const sel  = document.getElementById("ht-sel");
@@ -489,7 +639,7 @@ function renderCourseProgress(){
     </div>`;
 }
 
-/* ── COUNTDOWN (FIX #1: custom exam date) ── */
+/* ── COUNTDOWN ── */
 function renderCountdown(){
   const examDate = getExamDate();
   const days     = getCountdownDays();
@@ -519,18 +669,42 @@ function renderCountdown(){
   });
 }
 
-/* ── HEATMAP (now driven by study log) ── */
+/* ── FIX #4: 热力图——按月渲染 + 北京时间 + 正确的星期对应 ── */
 function renderHeatmap(){
-  const el   = document.getElementById("heatmap-card");
-  const log  = getStudyLog();
-  const days = ["一","二","三","四","五","六","日"];
+  const el  = document.getElementById("heatmap-card");
+  const log = getStudyLog();
 
-  /* build last 35 days */
-  const cells = [];
-  for(let i=34; i>=0; i--){
-    const d   = new Date();
-    d.setDate(d.getDate() - i);
-    const key = d.toISOString().slice(0,10);
+  // 北京时间
+  const bjt   = new Date(new Date().toLocaleString("en-US",{timeZone:"Asia/Shanghai"}));
+  const year  = bjt.getFullYear();
+  const month = bjt.getMonth(); // 0-based
+  const todayDate = bjt.getDate();
+
+  // 当前北京时间字符串，用于右上角显示
+  const timeStr = bjt.toLocaleString("zh-CN",{
+    timeZone:"Asia/Shanghai",
+    year:"numeric", month:"2-digit", day:"2-digit",
+    hour:"2-digit", minute:"2-digit"
+  });
+
+  // 本月第一天是星期几（周日=0, 周一=1…）
+  const firstDayOfWeek = new Date(year, month, 1).getDay(); // 0=Sunday
+  // 本月总天数
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+
+  // 星期标签，从周日开始
+  const dayLabels = ["日","一","二","三","四","五","六"];
+
+  // 构建每一天的 cell，先填 offset 空格，再填日期格
+  let cellsHtml = "";
+  // 空白占位（让1号对准正确的列）
+  for(let i=0; i<firstDayOfWeek; i++){
+    cellsHtml += `<div class="hm-cell hm-empty"></div>`;
+  }
+  for(let d=1; d<=daysInMonth; d++){
+    const mm = String(month+1).padStart(2,"0");
+    const dd = String(d).padStart(2,"0");
+    const key = `${year}-${mm}-${dd}`;
     const e   = log[key];
     let level = 0;
     if(e && e.done > 0){
@@ -538,15 +712,19 @@ function renderHeatmap(){
       else if(e.done >= e.total/2) level = 2;
       else level = 1;
     }
-    cells.push(level);
+    const isToday = d === todayDate;
+    cellsHtml += `<div class="hm-cell ${level===0?"":level===1?"l1":level===2?"l2":"l3"} ${isToday?"hm-today":""}"
+      title="${year}年${month+1}月${d}日 ${["周日","周一","周二","周三","周四","周五","周六"][new Date(year,month,d).getDay()]}${e?` — 完成${e.done}/${e.total}`:""}"></div>`;
   }
 
   el.innerHTML = `
-    <div class="card-header-row" style="margin-bottom:8px">
+    <div class="card-header-row" style="margin-bottom:6px">
       <span class="card-title">🔥 学习热力图</span>
+      <span style="font-size:11px;color:var(--text-dim);font-family:'VT323',monospace">${timeStr} 北京时间</span>
     </div>
-    <div class="heatmap-week-labels">${days.map(d=>`<span class="hm-wlabel">${d}</span>`).join("")}</div>
-    <div class="heatmap-grid">${cells.map(l=>`<div class="hm-cell ${l===0?"":l===1?"l1":l===2?"l2":"l3"}"></div>`).join("")}</div>
+    <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px">${year}年${month+1}月</div>
+    <div class="heatmap-week-labels">${dayLabels.map(d=>`<span class="hm-wlabel">${d}</span>`).join("")}</div>
+    <div class="heatmap-grid">${cellsHtml}</div>
     <div class="heatmap-legend">少
       <span class="hm-swatch" style="background:var(--bg-card2)"></span>
       <span class="hm-swatch" style="background:#c9dbc5"></span>
@@ -574,17 +752,25 @@ function buildDashboard(){
   const weekDone   = getLast7DaysDone(log);
   const overallCompletion = getCompletionRate(tasks);
   const focus = todayTasks[0]?.type || "待设置";
-  const cells    = [];
-  for(let i=34;i>=0;i--){
-    const d=new Date(); d.setDate(d.getDate()-i);
-    const key=d.toISOString().slice(0,10);
+
+  // 热力图（按月，同 renderHeatmap 逻辑）
+  const bjt   = new Date(new Date().toLocaleString("en-US",{timeZone:"Asia/Shanghai"}));
+  const year  = bjt.getFullYear();
+  const month = bjt.getMonth();
+  const firstDayOfWeek = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+  const todayDate = bjt.getDate();
+  const dayLabels = ["日","一","二","三","四","五","六"];
+  let cellsHtml = "";
+  for(let i=0;i<firstDayOfWeek;i++) cellsHtml += `<div class="hm-cell hm-empty"></div>`;
+  for(let d=1;d<=daysInMonth;d++){
+    const key = `${year}-${String(month+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
     const e=log[key]; let l=0;
     if(e&&e.done>0){ l=e.done>=e.total?3:e.done>=e.total/2?2:1; }
-    cells.push(l);
+    cellsHtml += `<div class="hm-cell ${l===0?"":l===1?"l1":l===2?"l2":"l3"} ${d===todayDate?"hm-today":""}" title="${year}年${month+1}月${d}日"></div>`;
   }
-  const days     = ["一","二","三","四","五","六","日"];
-  const examDate = getExamDate();
 
+  const examDate = getExamDate();
   return `<div class="dash-content-stack">
   <div class="dash-metric-row">
     <div class="dash-metric-box">
@@ -638,8 +824,9 @@ function buildDashboard(){
 
   <div class="card card-pad">
     <div class="card-hdr"><span class="section-kicker">Heatmap</span><h4>学习热力图</h4></div>
-    <div class="heatmap-week-labels">${days.map(d=>`<span class="hm-wlabel">${d}</span>`).join("")}</div>
-    <div class="heatmap-grid" id="dt-heatmap">${cells.map(l=>`<div class="hm-cell ${l===0?"":l===1?"l1":l===2?"l2":"l3"}"></div>`).join("")}</div>
+    <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px">${year}年${month+1}月</div>
+    <div class="heatmap-week-labels">${dayLabels.map(d=>`<span class="hm-wlabel">${d}</span>`).join("")}</div>
+    <div class="heatmap-grid" id="dt-heatmap">${cellsHtml}</div>
     <div class="heatmap-legend">少
       <span class="hm-swatch" style="background:var(--bg-card2)"></span>
       <span class="hm-swatch" style="background:#c9dbc5"></span>
@@ -667,9 +854,16 @@ function refreshDashboardList(el, dateStr){
       <button class="btn-danger btn-small" data-dt="${esc(t.id)}" style="margin-left:4px;flex-shrink:0">✕</button>
     </div>`).join("");
 
+  // 标签内联编辑
+  list.querySelectorAll(".task-tag[data-t]").forEach(tagEl => {
+    const tid = tagEl.closest("[data-tid]")?.dataset.tid;
+    const task = dayTasks.find(t => t.id === tid);
+    if(task) makeTagEditable(tagEl, task);
+  });
+
   list.querySelectorAll(".task-item[data-tid]").forEach(item =>
     item.addEventListener("click", e => {
-      if(e.target.closest("[data-dt]")) return;
+      if(e.target.closest("[data-dt]") || e.target.tagName === "SELECT") return;
       const ts = getTasks();
       const t  = ts.find(x => x.id === item.dataset.tid);
       if(t){
@@ -708,21 +902,26 @@ function refreshDashboardHeatmap(el){
   const hm  = el.querySelector("#dt-heatmap");
   if(!hm) return;
   const log = getStudyLog();
-  const cells=[];
-  for(let i=34;i>=0;i--){
-    const d=new Date(); d.setDate(d.getDate()-i);
-    const key=d.toISOString().slice(0,10);
+  const bjt = new Date(new Date().toLocaleString("en-US",{timeZone:"Asia/Shanghai"}));
+  const year = bjt.getFullYear();
+  const month = bjt.getMonth();
+  const firstDayOfWeek = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+  const todayDate = bjt.getDate();
+  let cellsHtml = "";
+  for(let i=0;i<firstDayOfWeek;i++) cellsHtml += `<div class="hm-cell hm-empty"></div>`;
+  for(let d=1;d<=daysInMonth;d++){
+    const key = `${year}-${String(month+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
     const e=log[key]; let l=0;
     if(e&&e.done>0){ l=e.done>=e.total?3:e.done>=e.total/2?2:1; }
-    cells.push(l);
+    cellsHtml += `<div class="hm-cell ${l===0?"":l===1?"l1":l===2?"l2":"l3"} ${d===todayDate?"hm-today":""}"></div>`;
   }
-  hm.innerHTML = cells.map(l=>`<div class="hm-cell ${l===0?"":l===1?"l1":l===2?"l2":"l3"}"></div>`).join("");
+  hm.innerHTML = cellsHtml;
 }
 
 function bindDashboardEvents(el){
   let activeDate = todayStr();
 
-  /* exam date save */
   el.querySelector("#dash-exam-save")?.addEventListener("click", () => {
     const val = el.querySelector("#dash-exam-input")?.value;
     if(!val) return;
@@ -734,7 +933,6 @@ function bindDashboardEvents(el){
     if(msg){ msg.textContent="✓ 已保存"; setTimeout(()=>msg.textContent="",2000); }
   });
 
-  /* date picker for tasks */
   el.querySelector("#dt-date")?.addEventListener("change", e => {
     activeDate = e.target.value;
     refreshDashboardList(el, activeDate);
@@ -742,7 +940,6 @@ function bindDashboardEvents(el){
 
   refreshDashboardList(el, activeDate);
 
-  /* add task */
   const addFn = () => {
     const inp = el.querySelector("#dt-inp");
     const sel = el.querySelector("#dt-sel");
@@ -766,7 +963,7 @@ function bindDashboardEvents(el){
 }
 
 /* ══════════════════════════════════
-   CURRICULUM (FIX #3: unit → own page)
+   CURRICULUM
 ══════════════════════════════════ */
 function buildCurriculum(){
   return `
@@ -798,14 +995,13 @@ function bindCurriculumEvents(el){
     btn.addEventListener("click", () => {
       selectedUnitId = btn.dataset.unitId;
       activeUnitTab  = "lecture";
-      /* FIX #3: navigate to unit-detail page */
       showPage("unit-detail");
     })
   );
 }
 
 /* ══════════════════════════════════
-   UNIT DETAIL (standalone page)
+   UNIT DETAIL
 ══════════════════════════════════ */
 function buildUnitDetail(){
   const unit = getSelectedUnit();
@@ -848,34 +1044,50 @@ function bindUnitDetailEvents(el){
     })
   );
 
+  /* FIX #6: 修复答案判定逻辑 */
   el.querySelectorAll(".grade-btn").forEach(btn =>
     btn.addEventListener("click", () => {
       const row     = btn.closest(".ex-grade-row");
       const inp     = row.querySelector(".grade-input");
       const resEl   = row.querySelector(".grade-result");
-      const correct = (btn.dataset.correct||"").toLowerCase().trim();
-      const user    = inp.value.trim().toLowerCase();
-      const ok      = correct && user && (correct.includes(user) || user.includes(correct.split(/[/,]/)[0].trim()));
-      resEl.textContent = ok ? "✓ 正确" : "✗ 错误";
+      const correct = btn.dataset.correct || "";
+      const user    = inp.value.trim();
+
+      if(!user){
+        resEl.textContent = "请先填写答案";
+        resEl.className   = "grade-result wrong";
+        return;
+      }
+
+      const ok = checkAnswerCorrect(user, correct);
+      resEl.textContent = ok ? "✓ 正确" : `✗ 错误（参考：${correct}）`;
       resEl.className   = "grade-result "+(ok?"correct":"wrong");
-      if(!ok && inp.value.trim()){
+
+      if(!ok && user){
         const unit = getSelectedUnit();
         const ml   = getMistakes();
-        ml.push({
-          id:            "m-"+Date.now(),
-          date:          new Date().toISOString().slice(0,10),
-          source:        unit.level+" "+unit.code,
-          question:      btn.dataset.prompt||"练习题",
-          myAnswer:      inp.value.trim(),
-          correctAnswer: btn.dataset.correct||"",
-          reason:"", reflection:"", tags:["待分析"]
-        });
-        saveMistakes(ml);
-        const n = document.createElement("span");
-        n.textContent = " → 加入错题池";
-        n.style.cssText = "font-size:11px;color:var(--accent-rose);margin-left:6px";
-        resEl.after(n);
-        setTimeout(()=>n.remove(), 3000);
+        // 避免同一道题重复加入
+        const alreadyExists = ml.some(m =>
+          m.question === (btn.dataset.prompt||"练习题") && m.myAnswer === user
+        );
+        if(!alreadyExists){
+          ml.push({
+            id:            "m-"+Date.now(),
+            date:          todayStr(),
+            source:        unit.level+" "+unit.code,
+            question:      btn.dataset.prompt||"练习题",
+            myAnswer:      user,
+            correctAnswer: correct,
+            reason:"", reflection:"", tags:["待分析"]
+          });
+          saveMistakes(ml);
+          if(window.syncMistake) syncMistake(ml[ml.length-1]);
+          const n = document.createElement("span");
+          n.textContent = " → 已加入错题池";
+          n.style.cssText = "font-size:11px;color:var(--accent-rose);margin-left:6px";
+          resEl.after(n);
+          setTimeout(()=>n.remove(), 3000);
+        }
       }
     })
   );
@@ -966,11 +1178,18 @@ function buildMistakes(){
         <thead><tr><th>日期</th><th>来源</th><th>题目</th><th>我的答案</th><th>正确答案</th><th>错误原因</th><th>反思</th><th>标签</th><th>操作</th></tr></thead>
         <tbody>${ml.map(m=>`
           <tr data-tags="${(m.tags||[]).join(",")}">
-            <td>${esc(m.date)}</td><td>${esc(m.source)}</td><td>${esc(m.question)}</td>
+            <td>${esc(m.date)}</td><td>${esc(m.source)}</td>
+            <td class="editable-cell" data-field="question" data-mid="${esc(m.id)}">${esc(m.question)}</td>
             <td style="color:var(--accent-rose)">${esc(m.myAnswer)}</td>
             <td style="color:var(--accent-green)">${esc(m.correctAnswer)}</td>
-            <td>${esc(m.reason)}</td><td>${esc(m.reflection)}</td>
-            <td>${(m.tags||[]).map(t=>`<span class="mistake-cat-tag">${esc(t)}</span>`).join(" ")}</td>
+            <td class="editable-cell" data-field="reason" data-mid="${esc(m.id)}" contenteditable="true" style="min-width:80px;cursor:text">${esc(m.reason)}</td>
+            <td class="editable-cell" data-field="reflection" data-mid="${esc(m.id)}" contenteditable="true" style="min-width:80px;cursor:text">${esc(m.reflection)}</td>
+            <td>
+              <div class="mistake-tag-cell" data-mid="${esc(m.id)}">
+                ${(m.tags||[]).map(t=>`<span class="mistake-cat-tag selectable-tag" data-tag="${esc(t)}">${esc(t)}</span>`).join(" ")}
+                <button class="btn-ghost btn-small mis-add-tag-btn" data-mid="${esc(m.id)}" style="font-size:10px;padding:1px 5px;margin-top:2px">＋标签</button>
+              </div>
+            </td>
             <td style="white-space:nowrap">
               <button class="btn-danger btn-small" data-dm="${esc(m.id)}">删</button><br>
               <button class="btn-ghost btn-small" data-at="${esc(m.id)}" style="margin-top:3px">复习</button>
@@ -984,7 +1203,7 @@ function buildMistakes(){
       <div class="card-hdr"><span class="section-kicker">Record</span><h4>新增错题记录</h4></div>
       <div class="mistake-form">
         <div class="form-row">
-          <div><label class="form-label">日期</label><input class="form-input" id="mf-date" type="date" value="${new Date().toISOString().slice(0,10)}"/></div>
+          <div><label class="form-label">日期</label><input class="form-input" id="mf-date" type="date" value="${todayStr()}"/></div>
           <div><label class="form-label">来源</label>
             <select class="form-select" id="mf-src">
               <option value="">选择来源</option>
@@ -1025,6 +1244,7 @@ function buildMistakes(){
         ${allTags.map(t=>`<span class="tag-pill" style="border-color:var(--accent-purple);color:var(--accent-purple)" data-filter="${esc(t)}">${esc(t)}</span>`).join("")}
       </div>
       ${tableHtml}
+      <p style="font-size:11px;color:var(--text-dim);margin-top:6px">💡 错误原因和反思列可直接点击编辑。点击标签旁的"＋标签"可添加/修改标签。点击"复习"将题目加入今日学习任务。</p>
     </div>
     <div class="card card-pad">
       <div class="card-hdr"><span class="section-kicker">Loop</span><h4>错题复习循环</h4></div>
@@ -1044,6 +1264,7 @@ function bindMistakeEvents(el){
       else{ selTags.push(t); p.classList.add("selected"); }
     })
   );
+
   el.querySelector("#mf-submit")?.addEventListener("click", () => {
     const q = el.querySelector("#mf-q").value.trim();
     if(!q){ alert("请填写题目内容"); return; }
@@ -1065,9 +1286,81 @@ function bindMistakeEvents(el){
     renderedPages.delete("mistakes");
     renderInnerPage("mistakes", document.getElementById("page-mistakes"));
   });
+
   el.querySelector("#mf-clear")?.addEventListener("click", () => {
     ["#mf-q","#mf-my","#mf-cor","#mf-reason","#mf-ref"].forEach(s => el.querySelector(s).value="");
   });
+
+  /* 内联编辑：错误原因 & 反思 */
+  el.querySelectorAll(".editable-cell[contenteditable='true']").forEach(cell => {
+    cell.addEventListener("blur", () => {
+      const mid   = cell.dataset.mid;
+      const field = cell.dataset.field;
+      const val   = cell.textContent.trim();
+      const ml    = getMistakes();
+      const m     = ml.find(x => x.id === mid);
+      if(m && field in m){
+        m[field] = val;
+        saveMistakes(ml);
+        if(window.syncMistake) syncMistake(m);
+      }
+    });
+    cell.addEventListener("keydown", e => {
+      if(e.key === "Enter" && !e.shiftKey){ e.preventDefault(); cell.blur(); }
+    });
+  });
+
+  /* FIX #7 (标签内联修改): ＋标签按钮 */
+  el.querySelectorAll(".mis-add-tag-btn").forEach(btn => {
+    btn.addEventListener("click", e => {
+      e.stopPropagation();
+      const mid = btn.dataset.mid;
+      const ml  = getMistakes();
+      const m   = ml.find(x => x.id === mid);
+      if(!m) return;
+
+      // 弹出标签选择器
+      const existing = new Set(m.tags || []);
+      const allOpts  = [...new Set([...DEFAULT_TAGS, ...m.tags])];
+      const picker   = document.createElement("div");
+      picker.style.cssText = "position:absolute;z-index:100;background:var(--bg-card);border:2px solid var(--border);border-radius:var(--card-r);padding:8px;box-shadow:var(--px-shadow);display:flex;flex-wrap:wrap;gap:4px;max-width:200px";
+      allOpts.forEach(tag => {
+        const tp = document.createElement("span");
+        tp.className = "tag-pill" + (existing.has(tag)?" selected":"");
+        tp.style.cssText = existing.has(tag)
+          ? "background:var(--accent-purple);border-color:var(--accent-purple);color:white;cursor:pointer"
+          : "border-color:var(--accent-purple);color:var(--accent-purple);cursor:pointer";
+        tp.textContent = tag;
+        tp.addEventListener("click", ev => {
+          ev.stopPropagation();
+          if(existing.has(tag)){ existing.delete(tag); }
+          else{ existing.add(tag); }
+          m.tags = [...existing];
+          saveMistakes(ml);
+          if(window.syncMistake) syncMistake(m);
+          // 更新标签显示
+          const cell = el.querySelector(`.mistake-tag-cell[data-mid="${mid}"]`);
+          if(cell){
+            const addBtn = cell.querySelector(".mis-add-tag-btn");
+            cell.innerHTML = m.tags.map(t=>`<span class="mistake-cat-tag">${esc(t)}</span>`).join(" ");
+            cell.appendChild(addBtn || btn);
+          }
+          picker.remove();
+        });
+        picker.appendChild(tp);
+      });
+      btn.parentNode.style.position = "relative";
+      btn.parentNode.appendChild(picker);
+      const closePicker = (ev) => {
+        if(!picker.contains(ev.target) && ev.target !== btn){
+          picker.remove();
+          document.removeEventListener("click", closePicker);
+        }
+      };
+      setTimeout(() => document.addEventListener("click", closePicker), 0);
+    });
+  });
+
   el.querySelectorAll("[data-dm]").forEach(btn =>
     btn.addEventListener("click", () => {
       if(window.deleteMistake) deleteMistake(btn.dataset.dm);
@@ -1076,18 +1369,48 @@ function bindMistakeEvents(el){
       renderInnerPage("mistakes", document.getElementById("page-mistakes"));
     })
   );
+
+  /* FIX #7: "复习"按钮——加入今日任务并携带原题数据 */
   el.querySelectorAll("[data-at]").forEach(btn =>
     btn.addEventListener("click", () => {
       const m = getMistakes().find(x=>x.id===btn.dataset.at);
       if(!m) return;
       const ts = getTasks();
-      ts.push({ id:"t-"+Date.now(), title:`复习错题：${m.question.slice(0,30)}`, type:"复习", done:false, detail:m.source, date:todayStr() });
+      const today = todayStr();
+
+      // 避免重复加入
+      const already = ts.some(t => t.type==="复习" && t.reviewMistakeId===m.id && t.date===today);
+      if(already){
+        btn.textContent="已在今日任务";
+        btn.disabled=true;
+        return;
+      }
+
+      ts.push({
+        id:             "t-"+Date.now(),
+        title:          `复习错题：${m.question.slice(0,28)}`,
+        type:           "复习",
+        done:           false,
+        detail:         `来源：${m.source} | 正确答案：${m.correctAnswer}`,
+        date:           today,
+        reviewMistakeId: m.id,
+        reviewData: {
+          question:      m.question,
+          correctAnswer: m.correctAnswer,
+          source:        m.source
+        }
+      });
       saveTasks(ts);
-      syncStudyLog(todayStr());
+      syncStudyLog(today);
+      if(window.syncTask) syncTask(ts[ts.length-1]);
+      const logObj = getStudyLog();
+      if(window.syncStudyLogDay) syncStudyLogDay(today, logObj[today]||{done:0,total:0});
       renderTodayTasks(); renderHeatmap(); renderProfileCard();
-      btn.textContent="✓已加"; btn.disabled=true;
+      btn.textContent="✓ 已加入";
+      btn.disabled=true;
     })
   );
+
   el.querySelector("#clr-all")?.addEventListener("click", () => {
     if(confirm("确定清空全部错题？")){
       saveMistakes([]);
@@ -1096,6 +1419,7 @@ function bindMistakeEvents(el){
       renderInnerPage("mistakes", document.getElementById("page-mistakes"));
     }
   });
+
   el.querySelectorAll("#mis-filter .tag-pill").forEach(p =>
     p.addEventListener("click", () => {
       el.querySelectorAll("#mis-filter .tag-pill").forEach(x=>x.classList.remove("selected"));
@@ -1106,6 +1430,7 @@ function bindMistakeEvents(el){
       });
     })
   );
+
   el.querySelector("#exp-mis")?.addEventListener("click", () => {
     const ml = getMistakes();
     if(!ml.length){ alert("没有错题可导出"); return; }
@@ -1114,7 +1439,7 @@ function bindMistakeEvents(el){
     const blob = new Blob(["\uFEFF"+[hdr.join(","),...rows].join("\n")],{type:"text/csv;charset=utf-8"});
     const a    = document.createElement("a");
     a.href     = URL.createObjectURL(blob);
-    a.download = `错题记录_${new Date().toISOString().slice(0,10)}.csv`;
+    a.download = `错题记录_${todayStr()}.csv`;
     a.click();
     URL.revokeObjectURL(a.href);
   });
@@ -1250,6 +1575,7 @@ function renderExercises(unit){
               <summary>查看答案</summary>
               <span class="ex-answer">${esc(item.answer||item.modelAnswer||"")}</span>
               ${item.explanation?`<p class="ex-explain">${esc(item.explanation)}</p>`:""}
+              ${item.keyPoints?`<ul class="ex-explain">${item.keyPoints.map(k=>`<li>${esc(k)}</li>`).join("")}</ul>`:""}
             </details>
           </li>`).join("")}
       </ol>
@@ -1261,6 +1587,7 @@ function renderExercises(unit){
    INIT
 ══════════════════════════════════ */
 document.addEventListener("DOMContentLoaded", () => {
+  carryOverIncompleteTasks(); // FIX #5: 页面加载时自动顺延
   renderTopbar();
   renderProfileCard();
   renderFeatureNav();
