@@ -355,10 +355,21 @@ function updateProfileUI() {
 async function pullAllFromCloud() {
   if (!currentUser) return;
   const uid = currentUser.id;
+  const localTasksBefore = (() => {
+    try { return JSON.parse(localStorage.getItem("fq-tasks-v3") || "[]"); } catch { return []; }
+  })();
+  const localMistakesBefore = (() => {
+    try { return JSON.parse(localStorage.getItem("fq-mistakes-v3") || "[]"); } catch { return []; }
+  })();
+  const localStudyLogBefore = (() => {
+    try { return JSON.parse(localStorage.getItem("fq-study-log") || "{}"); } catch { return {}; }
+  })();
+  const localExamDateBefore = localStorage.getItem("fq-exam-date") || "";
+  const localUsernameBefore = localStorage.getItem("fq-username") || "";
 
   /* tasks */
   const { data: tasks } = await db.from("tasks").select("*").eq("user_id", uid);
-  if (tasks) {
+  if (Array.isArray(tasks) && tasks.length > 0) {
     const local = tasks.map(r => ({
       id: r.id, title: r.title, detail: r.detail, type: r.type,
       done: r.done, date: r.date, unitId: r.unit_id,
@@ -366,11 +377,17 @@ async function pullAllFromCloud() {
       recommendedForDate: r.recommended_for_date || r.recommendedForDate || ""
     }));
     localStorage.setItem("fq-tasks-v3", JSON.stringify(local));
+  } else if (Array.isArray(tasks) && tasks.length === 0 && Array.isArray(localTasksBefore) && localTasksBefore.length > 0) {
+    console.warn("⚠ 云端 tasks 为空，保留本地并尝试回推云端");
+    localStorage.setItem("fq-tasks-v3", JSON.stringify(localTasksBefore));
+    if (typeof window.syncAllTasks === "function") {
+      try { await window.syncAllTasks(localTasksBefore); } catch (e) { console.warn("⚠ 回推 tasks 失败:", e?.message || e); }
+    }
   }
 
   /* mistakes */
   const { data: mistakes } = await db.from("mistakes").select("*").eq("user_id", uid);
-  if (mistakes) {
+  if (Array.isArray(mistakes) && mistakes.length > 0) {
     const local = mistakes.map(r => ({
       id: r.id, date: r.date, source: r.source, question: r.question,
       myAnswer: r.my_answer, correctAnswer: r.correct_answer,
@@ -380,23 +397,51 @@ async function pullAllFromCloud() {
       lastReviewedAt: r.last_reviewed_at || r.lastReviewedAt || ""
     }));
     localStorage.setItem("fq-mistakes-v3", JSON.stringify(local));
+  } else if (Array.isArray(mistakes) && mistakes.length === 0 && Array.isArray(localMistakesBefore) && localMistakesBefore.length > 0) {
+    console.warn("⚠ 云端 mistakes 为空，保留本地并尝试回推云端");
+    localStorage.setItem("fq-mistakes-v3", JSON.stringify(localMistakesBefore));
+    if (typeof window.syncMistake === "function") {
+      for (const m of localMistakesBefore) {
+        try { await window.syncMistake(m); } catch (e) { console.warn("⚠ 回推 mistake 失败:", e?.message || e); }
+      }
+    }
   }
 
   /* study_log */
   const { data: logs } = await db.from("study_log").select("*").eq("user_id", uid);
-  if (logs) {
+  if (Array.isArray(logs) && logs.length > 0) {
     const obj = {};
     logs.forEach(r => { obj[r.date] = { done: r.done, total: r.total }; });
     localStorage.setItem("fq-study-log", JSON.stringify(obj));
+  } else if (Array.isArray(logs) && logs.length === 0 && localStudyLogBefore && Object.keys(localStudyLogBefore).length > 0) {
+    console.warn("⚠ 云端 study_log 为空，保留本地并尝试回推云端");
+    localStorage.setItem("fq-study-log", JSON.stringify(localStudyLogBefore));
+    if (typeof window.syncStudyLogDay === "function") {
+      for (const [dateStr, entry] of Object.entries(localStudyLogBefore)) {
+        try { await window.syncStudyLogDay(dateStr, entry); } catch (e) { console.warn("⚠ 回推 study_log 失败:", e?.message || e); }
+      }
+    }
   }
 
   /* user_settings */
   const { data: settings } = await db.from("user_settings").select("*").eq("user_id", uid).single();
   if (settings?.exam_date) {
     localStorage.setItem("fq-exam-date", settings.exam_date);
+  } else if (localExamDateBefore && typeof window.syncExamDate === "function") {
+    try { await window.syncExamDate(localExamDateBefore); } catch (e) { console.warn("⚠ 回推 exam_date 失败:", e?.message || e); }
   }
   if (settings?.username) {
     localStorage.setItem("fq-username", settings.username);
+  } else if (localUsernameBefore) {
+    try {
+      await db.from("user_settings").upsert({
+        user_id: currentUser.id,
+        username: localUsernameBefore,
+        updated_at: new Date().toISOString()
+      }, { onConflict: "user_id" });
+    } catch (e) {
+      console.warn("⚠ 回推 username 失败:", e?.message || e);
+    }
   }
 
   /* 拉取完毕后刷新首页 UI */
