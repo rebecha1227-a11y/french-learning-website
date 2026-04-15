@@ -12,6 +12,7 @@ const UNIT_LEARN_KEY = "fq-unit-learning-v1"; // { [unitId]: { lectureDone, exer
 const MISTAKE_TAG_KEY = "fq-mistake-tag-library-v1";
 const ROLLOVER_SETTINGS_KEY = "fq-rollover-settings-v1";
 const METRICS_KEY = "fq-product-metrics-v1";
+const TASK_VIEW_KEY = "fq-task-view-v1";
 const BJT_TZ        = "Asia/Shanghai";
 const WEEKDAY_CN    = ["周日","周一","周二","周三","周四","周五","周六"];
 
@@ -101,6 +102,19 @@ function saveRolloverSettings(s){
     notify: s.notify !== false,
     lastRunDate: s.lastRunDate || "",
     lastRunMoved: Number(s.lastRunMoved || 0)
+  }));
+}
+function getTaskViewSettings(){
+  try{
+    const raw = JSON.parse(localStorage.getItem(TASK_VIEW_KEY) || "{}");
+    return { showCompleted: raw.showCompleted !== false };
+  }catch{
+    return { showCompleted: true };
+  }
+}
+function saveTaskViewSettings(s){
+  localStorage.setItem(TASK_VIEW_KEY, JSON.stringify({
+    showCompleted: s.showCompleted !== false
   }));
 }
 function trackMetric(name, count = 1){
@@ -896,12 +910,19 @@ function renderTodayTasks(){
   const weekDone = getLast7DaysDone(log);
   const planRate = getPlanningExecutionRate(tasks);
   const settings = getRolloverSettings();
+  const viewSettings = getTaskViewSettings();
 
   const activeDate = el.dataset.activeDate || today;
-  const dayTasks   = tasks.filter(t => getTaskWorkingDate(t) === activeDate);
+  const dayTasksRaw = tasks.filter(t => getTaskWorkingDate(t) === activeDate);
+  const dayTasks = [...dayTasksRaw].sort((a,b) => {
+    if(!!a.done === !!b.done) return 0;
+    return a.done ? 1 : -1; // 已完成任务沉底
+  });
+  const visibleDayTasks = viewSettings.showCompleted ? dayTasks : dayTasks.filter(t => !t.done);
   const todayTasks = tasks.filter(t => getTaskWorkingDate(t) === today);
   const overdueTasks = tasks.filter(t => !t.done && getTaskWorkingDate(t) < today);
-  const undone     = dayTasks.filter(t => !t.done).length;
+  const doneCount  = dayTasksRaw.filter(t => t.done).length;
+  const undone     = dayTasksRaw.filter(t => !t.done).length;
   const todayDone  = todayTasks.filter(t => t.done).length;
   const activeLog  = log[activeDate];
   const isManualChecked = !!activeLog?.manual;
@@ -920,6 +941,14 @@ function renderTodayTasks(){
       <button class="btn-ghost btn-small" id="ht-checkin-toggle">${isManualChecked ? "取消补卡" : "补记打卡"}</button>
       <button class="btn-ghost btn-small" id="ht-postpone-all" ${undone ? "" : "disabled"}>未完成→明天(${undone})</button>
     </div>
+    <div class="date-selector-row" style="margin-top:6px;gap:8px">
+      <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-sub)">
+        <input id="ht-show-completed" type="checkbox" ${viewSettings.showCompleted ? "checked" : ""}/>
+        显示已完成任务（${doneCount}）
+      </label>
+      <input class="form-input" id="ht-move-date" type="date" value="${shiftDateKey(activeDate, 1)}" style="width:auto;padding:4px 8px;font-size:12px"/>
+      <button class="btn-ghost btn-small" id="ht-move-all-to-date" ${undone ? "" : "disabled"}>未完成→所选日期</button>
+    </div>
     <div class="add-task-row" style="margin-top:8px">
       <input class="add-task-input" id="ht-inp" type="text" placeholder="添加今日任务…"/>
       <select class="add-task-select" id="ht-sel">
@@ -936,7 +965,7 @@ function renderTodayTasks(){
       </label>
     </div>
     <div class="task-list" id="ht-list">
-      ${dayTasks.length ? dayTasks.map(t => {
+      ${visibleDayTasks.length ? visibleDayTasks.map(t => {
         // FIX #7: 复习任务显示原题信息
         const isReview = t.type === "复习" && t.reviewData;
         const wd = getTaskWorkingDate(t);
@@ -956,7 +985,7 @@ function renderTodayTasks(){
             ${!t.done ? `<button class="btn-ghost btn-small" data-pp="${esc(t.id)}" style="margin-left:4px;flex-shrink:0">顺延+1天</button>` : ""}
             <button class="btn-danger btn-small" data-dt="${esc(t.id)}" style="margin-left:4px;flex-shrink:0">✕</button>
           </div>`;
-      }).join("") : `<div class="task-empty">这一天还没有任务，先添加一个学习目标吧。</div>`}
+      }).join("") : `<div class="task-empty">${dayTasksRaw.length && !viewSettings.showCompleted ? "当前仅有已完成任务（已隐藏）" : "这一天还没有任务，先添加一个学习目标吧。"}。</div>`}
     </div>
     <div class="task-list" id="ht-overdue-list" style="margin-top:10px">
       <div class="task-empty" style="border-style:solid">
@@ -1043,15 +1072,16 @@ function renderTodayTasks(){
     renderCourseProgress();
   });
 
-  document.getElementById("ht-postpone-overdue")?.addEventListener("click", e => {
-    e.stopPropagation();
+  const moveUnfinishedToDate = (targetDate, sourceType = "selected") => {
     const ts = getTasks();
-    const nextDate = shiftDateKey(today, 1);
     const moved = [];
     ts.forEach(t => {
-      if(!t.done && getTaskWorkingDate(t) < today){
-        t.workingDate = nextDate;
-        t.date = nextDate;
+      const shouldMove = sourceType === "overdue"
+        ? (!t.done && getTaskWorkingDate(t) < today)
+        : (!t.done && getTaskWorkingDate(t) === activeDate);
+      if(shouldMove){
+        t.workingDate = targetDate;
+        t.date = targetDate;
         t.rolloverCount = Number(t.rolloverCount || 0) + 1;
         t.rolloverMode = "manual";
         moved.push(t);
@@ -1059,12 +1089,31 @@ function renderTodayTasks(){
     });
     if(!moved.length) return;
     saveTasks(ts);
-    trackMetric("overdue_clear_batch", moved.length);
+    trackMetric(sourceType === "overdue" ? "overdue_clear_batch" : "rollover_manual_batch", moved.length);
     if(window.syncTask) moved.forEach(t => syncTask(t));
     renderTodayTasks();
     renderHeatmap();
     renderProfileCard();
     renderCourseProgress();
+  };
+
+  document.getElementById("ht-move-all-to-date")?.addEventListener("click", e => {
+    e.stopPropagation();
+    const targetDate = document.getElementById("ht-move-date")?.value || shiftDateKey(activeDate, 1);
+    if(!parseDateKey(targetDate)) return;
+    moveUnfinishedToDate(targetDate, "selected");
+  });
+
+  document.getElementById("ht-show-completed")?.addEventListener("change", e => {
+    saveTaskViewSettings({ showCompleted: !!e.target.checked });
+    renderTodayTasks();
+  });
+
+  document.getElementById("ht-postpone-overdue")?.addEventListener("click", e => {
+    e.stopPropagation();
+    const targetDate = document.getElementById("ht-move-date")?.value || shiftDateKey(today, 1);
+    if(!parseDateKey(targetDate)) return;
+    moveUnfinishedToDate(targetDate, "overdue");
   });
 
   el.querySelectorAll(".task-item[data-tid]").forEach(item =>
