@@ -30,6 +30,170 @@ let taskExtraColsSupported = null;
 let mistakeExtraColsSupported = null;
 const SYNC_META_KEY = "fq-sync-meta-v1";
 let syncActionPending = false;
+const WORKSPACE_GUEST_KEY = "fq-workspace-guest-v1";
+const WORKSPACE_USER_PREFIX = "fq-workspace-user-";
+const ACTIVE_WORKSPACE_KEY = "fq-active-workspace-v1";
+const WORKSPACE_MIGRATED_KEY = "fq-workspace-migrated-v1";
+const APP_DATA_KEYS = [
+  "fq-tasks-v3",
+  "fq-mistakes-v3",
+  "fq-study-log",
+  "fq-exam-date",
+  "fq-username",
+  "fq-exercise-stats-v1",
+  "fq-unit-reco-v1",
+  "fq-unit-learning-v1",
+  "fq-rollover-settings-v1",
+  "fq-task-view-v1",
+  "fq-product-metrics-v1"
+];
+const APP_DATA_KEY_SET = new Set(APP_DATA_KEYS);
+const rawGetItem = localStorage.getItem.bind(localStorage);
+const rawSetItem = localStorage.setItem.bind(localStorage);
+const rawRemoveItem = localStorage.removeItem.bind(localStorage);
+let activeWorkspaceId = "guest";
+let workspaceBridgeInstalled = false;
+let authTransitionChain = Promise.resolve();
+let initialAuthEventHandled = false;
+
+function getWorkspaceStorageKey(workspaceId) {
+  if (workspaceId === "guest") return WORKSPACE_GUEST_KEY;
+  if (workspaceId.startsWith("user:")) return `${WORKSPACE_USER_PREFIX}${workspaceId.slice(5)}`;
+  return `${WORKSPACE_USER_PREFIX}${workspaceId}`;
+}
+
+function readWorkspaceBlob(workspaceId) {
+  try {
+    const parsed = JSON.parse(rawGetItem(getWorkspaceStorageKey(workspaceId)) || "{}");
+    return {
+      version: 1,
+      data: parsed?.data && typeof parsed.data === "object" ? parsed.data : {}
+    };
+  } catch {
+    return { version: 1, data: {} };
+  }
+}
+
+function writeWorkspaceBlob(workspaceId, blob) {
+  const next = {
+    version: 1,
+    data: (blob && blob.data && typeof blob.data === "object") ? blob.data : {}
+  };
+  rawSetItem(getWorkspaceStorageKey(workspaceId), JSON.stringify(next));
+}
+
+function ensureWorkspace(workspaceId) {
+  const blob = readWorkspaceBlob(workspaceId);
+  writeWorkspaceBlob(workspaceId, blob);
+}
+
+function getWorkspaceValue(workspaceId, key) {
+  const blob = readWorkspaceBlob(workspaceId);
+  return Object.prototype.hasOwnProperty.call(blob.data, key) ? blob.data[key] : null;
+}
+
+function setWorkspaceValue(workspaceId, key, value) {
+  const blob = readWorkspaceBlob(workspaceId);
+  blob.data[key] = String(value);
+  writeWorkspaceBlob(workspaceId, blob);
+}
+
+function removeWorkspaceValue(workspaceId, key) {
+  const blob = readWorkspaceBlob(workspaceId);
+  delete blob.data[key];
+  writeWorkspaceBlob(workspaceId, blob);
+}
+
+function switchWorkspace(workspaceId) {
+  activeWorkspaceId = workspaceId || "guest";
+  rawSetItem(ACTIVE_WORKSPACE_KEY, activeWorkspaceId);
+  ensureWorkspace(activeWorkspaceId);
+}
+
+function migrateLegacyDataToGuestWorkspace() {
+  if (rawGetItem(WORKSPACE_MIGRATED_KEY) === "1") return;
+  const guestBlob = readWorkspaceBlob("guest");
+  let touched = false;
+  APP_DATA_KEYS.forEach(key => {
+    const raw = rawGetItem(key);
+    if (raw !== null && !Object.prototype.hasOwnProperty.call(guestBlob.data, key)) {
+      guestBlob.data[key] = raw;
+      touched = true;
+    }
+    if (raw !== null) rawRemoveItem(key);
+  });
+  if (touched) writeWorkspaceBlob("guest", guestBlob);
+  else ensureWorkspace("guest");
+  rawSetItem(WORKSPACE_MIGRATED_KEY, "1");
+}
+
+function installWorkspaceBridge() {
+  if (workspaceBridgeInstalled) return;
+  workspaceBridgeInstalled = true;
+
+  localStorage.getItem = function(key) {
+    const k = String(key);
+    if (APP_DATA_KEY_SET.has(k)) return getWorkspaceValue(activeWorkspaceId, k);
+    return rawGetItem(k);
+  };
+  localStorage.setItem = function(key, value) {
+    const k = String(key);
+    if (APP_DATA_KEY_SET.has(k)) {
+      setWorkspaceValue(activeWorkspaceId, k, value);
+      return;
+    }
+    rawSetItem(k, String(value));
+  };
+  localStorage.removeItem = function(key) {
+    const k = String(key);
+    if (APP_DATA_KEY_SET.has(k)) {
+      removeWorkspaceValue(activeWorkspaceId, k);
+      return;
+    }
+    rawRemoveItem(k);
+  };
+}
+
+function getWorkspaceDataPresence() {
+  let taskCount = 0;
+  let mistakeCount = 0;
+  let logDays = 0;
+  try {
+    const tasks = JSON.parse(localStorage.getItem("fq-tasks-v3") || "[]");
+    if (Array.isArray(tasks)) taskCount = tasks.length;
+  } catch {}
+  try {
+    const mistakes = JSON.parse(localStorage.getItem("fq-mistakes-v3") || "[]");
+    if (Array.isArray(mistakes)) mistakeCount = mistakes.length;
+  } catch {}
+  try {
+    const log = JSON.parse(localStorage.getItem("fq-study-log") || "{}");
+    if (log && typeof log === "object") logDays = Object.keys(log).length;
+  } catch {}
+  const examDate = (localStorage.getItem("fq-exam-date") || "").trim();
+  const username = (localStorage.getItem("fq-username") || "").trim();
+  const hasAny = taskCount > 0 || mistakeCount > 0 || logDays > 0 || !!examDate || !!username;
+  return { hasAny, taskCount, mistakeCount, logDays, examDate, username };
+}
+
+function refreshAllViews() {
+  if (typeof renderTodayTasks === "function") renderTodayTasks();
+  if (typeof renderHeatmap === "function") renderHeatmap();
+  if (typeof renderProfileCard === "function") renderProfileCard();
+  if (typeof renderCourseProgress === "function") renderCourseProgress();
+  if (typeof renderCountdown === "function") renderCountdown();
+}
+
+function queueAuthTransition(fn) {
+  authTransitionChain = authTransitionChain
+    .then(() => fn())
+    .catch(err => console.error("❌ auth transition error:", err));
+  return authTransitionChain;
+}
+
+migrateLegacyDataToGuestWorkspace();
+installWorkspaceBridge();
+switchWorkspace(activeWorkspaceId);
 
 function getSyncMeta() {
   try {
@@ -78,21 +242,159 @@ window.getCurrentUsername = () => {
   return email ? email.split("@")[0] : "";
 };
 
+async function fetchCloudPresence(uid) {
+  const out = { taskCount: 0, mistakeCount: 0, logCount: 0, hasSettings: false, hasCloudData: false };
+  const tasksResp = await withTimeout(
+    db.from("tasks").select("id", { count: "exact", head: true }).eq("user_id", uid),
+    12000,
+    "查询云端任务超时"
+  );
+  if (tasksResp?.error) throw tasksResp.error;
+  out.taskCount = Number(tasksResp?.count || 0);
+
+  const mistakesResp = await withTimeout(
+    db.from("mistakes").select("id", { count: "exact", head: true }).eq("user_id", uid),
+    12000,
+    "查询云端错题超时"
+  );
+  if (mistakesResp?.error) throw mistakesResp.error;
+  out.mistakeCount = Number(mistakesResp?.count || 0);
+
+  const logResp = await withTimeout(
+    db.from("study_log").select("date", { count: "exact", head: true }).eq("user_id", uid),
+    12000,
+    "查询云端学习日志超时"
+  );
+  if (logResp?.error) throw logResp.error;
+  out.logCount = Number(logResp?.count || 0);
+
+  const settingsResp = await withTimeout(
+    db.from("user_settings").select("exam_date,username").eq("user_id", uid).maybeSingle(),
+    12000,
+    "查询云端设置超时"
+  );
+  if (settingsResp?.error && settingsResp.error.code !== "PGRST116") throw settingsResp.error;
+  const st = settingsResp?.data || null;
+  out.hasSettings = !!(st?.exam_date || st?.username);
+  out.hasCloudData = out.taskCount > 0 || out.mistakeCount > 0 || out.logCount > 0 || out.hasSettings;
+  return out;
+}
+
+function injectSyncDecisionModal() {
+  if (document.getElementById("sync-decision-modal")) return;
+  const modal = document.createElement("div");
+  modal.id = "sync-decision-modal";
+  modal.innerHTML = `
+    <div class="sync-decision-overlay" id="sync-decision-overlay">
+      <div class="sync-decision-box">
+        <div class="sync-decision-title">检测到该账号已有云端数据</div>
+        <p class="sync-decision-msg" id="sync-decision-msg">请选择同步方式：</p>
+        <div class="sync-decision-actions">
+          <button class="sync-decision-primary" id="sync-decision-cloud">使用云端覆盖本机（推荐）</button>
+          <button class="sync-decision-warning" id="sync-decision-upload">本机上传到云端</button>
+          <button class="sync-decision-ghost" id="sync-decision-later">稍后处理</button>
+        </div>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+}
+
+function askLoginSyncDecision(cloudPresence, localPresence) {
+  injectSyncDecisionModal();
+  const overlay = document.getElementById("sync-decision-overlay");
+  const msg = document.getElementById("sync-decision-msg");
+  if (msg) {
+    msg.textContent = `云端：任务${cloudPresence.taskCount}条，错题${cloudPresence.mistakeCount}条，学习日志${cloudPresence.logCount}天；本机：任务${localPresence.taskCount}条，错题${localPresence.mistakeCount}条，学习日志${localPresence.logDays}天。`;
+  }
+  if (overlay) overlay.style.display = "flex";
+  return new Promise(resolve => {
+    const finish = action => {
+      if (overlay) overlay.style.display = "none";
+      resolve(action);
+    };
+    document.getElementById("sync-decision-cloud")?.addEventListener("click", () => finish("cloud"), { once: true });
+    document.getElementById("sync-decision-upload")?.addEventListener("click", () => finish("upload"), { once: true });
+    document.getElementById("sync-decision-later")?.addEventListener("click", () => finish("later"), { once: true });
+  });
+}
+
+async function handleLoginSyncDecision(source = "auth-change") {
+  if (!currentUser) return;
+  const localPresence = getWorkspaceDataPresence();
+  let cloudPresence;
+  try {
+    cloudPresence = await fetchCloudPresence(currentUser.id);
+  } catch (e) {
+    console.warn("⚠ 查询云端数据概况失败:", e?.message || e);
+    setSyncStatus("error", `云端检查失败：${e?.message || "请稍后重试"}`, { source });
+    return;
+  }
+
+  if (!cloudPresence.hasCloudData) {
+    setSyncStatus("idle", "云端暂无数据，你可以继续空白开始，或手动上传本机数据。", {
+      source: "login-empty-cloud"
+    });
+    return;
+  }
+
+  // 恢复会话时，如果本机已有该账号空间数据，不强打断弹窗
+  if (source === "init-session" && localPresence.hasAny) {
+    setSyncStatus("idle", "已进入账号空间。可在“同步”中手动上传或拉取。", {
+      source: "init-session"
+    });
+    return;
+  }
+
+  if (!localPresence.hasAny) {
+    await runManualPullFromCloud({ skipConfirm: true, source: "login-auto-cloud" });
+    return;
+  }
+
+  const action = await askLoginSyncDecision(cloudPresence, localPresence);
+  if (action === "cloud") {
+    await runManualPullFromCloud({ skipConfirm: true, source: "login-decision-cloud" });
+  } else if (action === "upload") {
+    await runManualUploadToCloud({ source: "login-decision-upload" });
+  } else {
+    setSyncStatus("idle", "已保留本机数据，可在“同步”中稍后处理。", { source: "login-later" });
+  }
+}
+
+async function handleAuthSessionChange(event, session, source = "auth-change") {
+  await queueAuthTransition(async () => {
+    const prevUserId = currentUser?.id || "";
+    const nextUser = session?.user ?? null;
+    const nextUserId = nextUser?.id || "";
+    const nextWorkspace = nextUser ? `user:${nextUser.id}` : "guest";
+
+    switchWorkspace(nextWorkspace);
+    currentUser = nextUser;
+    if (nextUser && typeof window.closeAuthModal === "function") window.closeAuthModal();
+    updateProfileUI();
+    refreshAllViews();
+
+    if (!nextUser) {
+      setSyncStatus("idle", "当前为本机模式（未登录），数据仅保存在本机。", { source: event || source });
+      return;
+    }
+
+    // 同一用户 token 刷新时不重复触发决策
+    if (prevUserId && prevUserId === nextUserId && event === "TOKEN_REFRESHED") return;
+    await handleLoginSyncDecision(source);
+  });
+}
+
 /* 监听登录状态变化 */
 db.auth.onAuthStateChange(async (event, session) => {
-  currentUser = session?.user ?? null;
-  updateProfileUI();
-  if (currentUser) {
-    await pullAllFromCloud({ source: "auth-change" });   // 登录后拉取云端数据
-  }
+  if (event === "INITIAL_SESSION") initialAuthEventHandled = true;
+  await handleAuthSessionChange(event, session, event === "INITIAL_SESSION" ? "init-session" : "auth-change");
 });
 
 /* 刷新页面时恢复会话 */
 (async function initAuthSession() {
+  if (initialAuthEventHandled) return;
   const { data } = await db.auth.getSession();
-  currentUser = data?.session?.user ?? null;
-  updateProfileUI();
-  if (currentUser) await pullAllFromCloud({ source: "init-session" });
+  await handleAuthSessionChange("INIT_SESSION", data?.session ?? null, "init-session");
 })();
 
 /* ══════════════════════════════════════════════════════
@@ -343,10 +645,11 @@ function setSyncStatus(state, message, extra = {}) {
   refreshSyncPanel();
 }
 
-async function runManualUploadToCloud() {
+async function runManualUploadToCloud(options = {}) {
+  const { source = "manual-upload" } = options || {};
   if (!currentUser || syncActionPending) return;
   syncActionPending = true;
-  setSyncStatus("syncing", "正在上传本机数据到云端…");
+  setSyncStatus("syncing", "正在上传本机数据到云端…", { source });
   try {
     const tasks = (() => {
       try { return JSON.parse(localStorage.getItem("fq-tasks-v3") || "[]"); } catch { return []; }
@@ -406,12 +709,12 @@ async function runManualUploadToCloud() {
 
     setSyncStatus("success", "上传成功，云端已更新", {
       lastSyncAt: new Date().toISOString(),
-      source: "manual-upload"
+      source
     });
   } catch (err) {
     console.error("❌ 手动上传失败:", err);
     setSyncStatus("error", `上传失败：${err?.message || "请稍后重试"}`, {
-      source: "manual-upload"
+      source
     });
   } finally {
     syncActionPending = false;
@@ -420,23 +723,34 @@ async function runManualUploadToCloud() {
   }
 }
 
-async function runManualPullFromCloud() {
+async function runManualPullFromCloud(options = {}) {
+  const { skipConfirm = false, source = "manual-pull" } = options || {};
   if (!currentUser || syncActionPending) return;
-  const confirmed = window.confirm("将使用云端数据覆盖本机当前数据，确认继续？");
-  if (!confirmed) return;
+  if (!skipConfirm) {
+    const confirmed = window.confirm("将使用云端数据覆盖本机当前数据，确认继续？");
+    if (!confirmed) return;
+  }
   syncActionPending = true;
-  setSyncStatus("syncing", "正在从云端拉取并覆盖本机…");
+  setSyncStatus("syncing", "正在从云端拉取并覆盖本机…", { source });
   try {
-    const result = await pullAllFromCloud({ forceCloud: true, source: "manual-pull" });
+    const result = await withTimeout(
+      pullAllFromCloud({
+        forceCloud: true,
+        source,
+        onProgress: msg => setSyncStatus("syncing", msg, { source })
+      }),
+      25000,
+      "拉取超时，请稍后重试"
+    );
     if (!result?.ok) throw new Error(result?.reason || "拉取失败");
     setSyncStatus("success", "拉取成功，本机已与云端一致", {
       lastSyncAt: new Date().toISOString(),
-      source: "manual-pull"
+      source
     });
   } catch (err) {
     console.error("❌ 手动拉取失败:", err);
     setSyncStatus("error", `拉取失败：${err?.message || "请稍后重试"}`, {
-      source: "manual-pull"
+      source
     });
   } finally {
     syncActionPending = false;
@@ -452,7 +766,7 @@ function injectCloudSyncModal() {
     <div class="sync-overlay" id="sync-overlay">
       <div class="sync-box">
         <div class="sync-title">云同步中心</div>
-        <p class="sync-tip">登录后数据会自动同步。你也可以在这里手动上传或覆盖拉取。</p>
+        <p class="sync-tip">你可以选择“本机上传到云端”或“从云端拉取覆盖本机”。</p>
         <p class="sync-last" id="sync-last-time">上次成功同步：尚无记录</p>
         <p class="sync-local" id="sync-local-summary"></p>
         <p class="sync-status" id="sync-status-msg"></p>
@@ -563,11 +877,10 @@ window.doLogout = async function() {
       return { ok: false, reason: error.message };
     }
     currentUser = null;
+    switchWorkspace("guest");
+    setSyncStatus("idle", "已退出账号，当前为本机模式（游客空间）。", { source: "logout" });
     updateProfileUI();
-    if (typeof renderTodayTasks === "function") renderTodayTasks();
-    if (typeof renderHeatmap === "function") renderHeatmap();
-    if (typeof renderCourseProgress === "function") renderCourseProgress();
-    if (typeof renderCountdown === "function") renderCountdown();
+    refreshAllViews();
     return { ok: true };
   } catch (err) {
     console.error("❌ 退出异常:", err);
@@ -587,46 +900,45 @@ function updateProfileUI() {
 ══════════════════════════════════════════════════════ */
 async function pullAllFromCloud(options = {}) {
   if (!currentUser) return { ok: false, reason: "未登录" };
-  const { forceCloud = false, source = "auto" } = options || {};
+  const { forceCloud = false, source = "auto", onProgress = null } = options || {};
   const uid = currentUser.id;
-  const localTasksBefore = (() => {
-    try { return JSON.parse(localStorage.getItem("fq-tasks-v3") || "[]"); } catch { return []; }
-  })();
-  const localMistakesBefore = (() => {
-    try { return JSON.parse(localStorage.getItem("fq-mistakes-v3") || "[]"); } catch { return []; }
-  })();
-  const localStudyLogBefore = (() => {
-    try { return JSON.parse(localStorage.getItem("fq-study-log") || "{}"); } catch { return {}; }
-  })();
-  const localExamDateBefore = localStorage.getItem("fq-exam-date") || "";
-  const localUsernameBefore = localStorage.getItem("fq-username") || "";
+  const progress = (msg) => {
+    if (typeof onProgress === "function") onProgress(msg);
+  };
 
   try {
+    progress("正在读取任务…");
     /* tasks */
-    const { data: tasks, error: taskErr } = await db.from("tasks").select("*").eq("user_id", uid);
+    const { data: tasks, error: taskErr } = await withTimeout(
+      db.from("tasks").select("*").eq("user_id", uid),
+      12000,
+      "读取云端任务超时"
+    );
     if (taskErr) throw taskErr;
     if (Array.isArray(tasks) && tasks.length > 0) {
       const local = tasks.map(r => ({
         id: r.id, title: r.title, detail: r.detail, type: r.type,
         done: r.done, date: r.date, unitId: r.unit_id,
+        plannedDate: r.planned_date || r.plannedDate || r.date,
+        workingDate: r.working_date || r.workingDate || r.date,
+        completedAt: r.completed_at || r.completedAt || "",
+        rolloverCount: Number(r.rollover_count || r.rolloverCount || 0),
+        rolloverMode: r.rollover_mode || r.rolloverMode || "",
         recommendedFromUnitId: r.recommended_from_unit_id || r.recommendedFromUnitId || "",
         recommendedForDate: r.recommended_for_date || r.recommendedForDate || ""
       }));
       localStorage.setItem("fq-tasks-v3", JSON.stringify(local));
-    } else if (Array.isArray(tasks) && tasks.length === 0) {
-      if (forceCloud) {
-        localStorage.setItem("fq-tasks-v3", "[]");
-      } else if (Array.isArray(localTasksBefore) && localTasksBefore.length > 0) {
-        console.warn("⚠ 云端 tasks 为空，保留本地并尝试回推云端");
-        localStorage.setItem("fq-tasks-v3", JSON.stringify(localTasksBefore));
-        if (typeof window.syncAllTasks === "function") {
-          try { await window.syncAllTasks(localTasksBefore); } catch (e) { console.warn("⚠ 回推 tasks 失败:", e?.message || e); }
-        }
-      }
+    } else if (forceCloud) {
+      localStorage.setItem("fq-tasks-v3", "[]");
     }
 
+    progress("正在读取错题…");
     /* mistakes */
-    const { data: mistakes, error: mistakeErr } = await db.from("mistakes").select("*").eq("user_id", uid);
+    const { data: mistakes, error: mistakeErr } = await withTimeout(
+      db.from("mistakes").select("*").eq("user_id", uid),
+      12000,
+      "读取云端错题超时"
+    );
     if (mistakeErr) throw mistakeErr;
     if (Array.isArray(mistakes) && mistakes.length > 0) {
       const local = mistakes.map(r => ({
@@ -638,43 +950,33 @@ async function pullAllFromCloud(options = {}) {
         lastReviewedAt: r.last_reviewed_at || r.lastReviewedAt || ""
       }));
       localStorage.setItem("fq-mistakes-v3", JSON.stringify(local));
-    } else if (Array.isArray(mistakes) && mistakes.length === 0) {
-      if (forceCloud) {
-        localStorage.setItem("fq-mistakes-v3", "[]");
-      } else if (Array.isArray(localMistakesBefore) && localMistakesBefore.length > 0) {
-        console.warn("⚠ 云端 mistakes 为空，保留本地并尝试回推云端");
-        localStorage.setItem("fq-mistakes-v3", JSON.stringify(localMistakesBefore));
-        if (typeof window.syncMistake === "function") {
-          for (const m of localMistakesBefore) {
-            try { await window.syncMistake(m); } catch (e) { console.warn("⚠ 回推 mistake 失败:", e?.message || e); }
-          }
-        }
-      }
+    } else if (forceCloud) {
+      localStorage.setItem("fq-mistakes-v3", "[]");
     }
 
+    progress("正在读取学习日志…");
     /* study_log */
-    const { data: logs, error: logErr } = await db.from("study_log").select("*").eq("user_id", uid);
+    const { data: logs, error: logErr } = await withTimeout(
+      db.from("study_log").select("*").eq("user_id", uid),
+      12000,
+      "读取云端学习日志超时"
+    );
     if (logErr) throw logErr;
     if (Array.isArray(logs) && logs.length > 0) {
       const obj = {};
       logs.forEach(r => { obj[r.date] = { done: r.done, total: r.total }; });
       localStorage.setItem("fq-study-log", JSON.stringify(obj));
-    } else if (Array.isArray(logs) && logs.length === 0) {
-      if (forceCloud) {
-        localStorage.setItem("fq-study-log", "{}");
-      } else if (localStudyLogBefore && Object.keys(localStudyLogBefore).length > 0) {
-        console.warn("⚠ 云端 study_log 为空，保留本地并尝试回推云端");
-        localStorage.setItem("fq-study-log", JSON.stringify(localStudyLogBefore));
-        if (typeof window.syncStudyLogDay === "function") {
-          for (const [dateStr, entry] of Object.entries(localStudyLogBefore)) {
-            try { await window.syncStudyLogDay(dateStr, entry); } catch (e) { console.warn("⚠ 回推 study_log 失败:", e?.message || e); }
-          }
-        }
-      }
+    } else if (forceCloud) {
+      localStorage.setItem("fq-study-log", "{}");
     }
 
+    progress("正在读取账号设置…");
     /* user_settings */
-    const { data: settings, error: settingsErr } = await db.from("user_settings").select("*").eq("user_id", uid).single();
+    const { data: settings, error: settingsErr } = await withTimeout(
+      db.from("user_settings").select("*").eq("user_id", uid).maybeSingle(),
+      12000,
+      "读取云端设置超时"
+    );
     const noSettingRow = settingsErr && (settingsErr.code === "PGRST116" || /0 rows/i.test(settingsErr.message || ""));
     if (settingsErr && !noSettingRow) throw settingsErr;
 
@@ -682,33 +984,18 @@ async function pullAllFromCloud(options = {}) {
       localStorage.setItem("fq-exam-date", settings.exam_date);
     } else if (forceCloud) {
       localStorage.removeItem("fq-exam-date");
-    } else if (localExamDateBefore && typeof window.syncExamDate === "function") {
-      try { await window.syncExamDate(localExamDateBefore); } catch (e) { console.warn("⚠ 回推 exam_date 失败:", e?.message || e); }
     }
 
     if (settings?.username) {
       localStorage.setItem("fq-username", settings.username);
     } else if (forceCloud) {
       localStorage.removeItem("fq-username");
-    } else if (localUsernameBefore) {
-      try {
-        await db.from("user_settings").upsert({
-          user_id: currentUser.id,
-          username: localUsernameBefore,
-          updated_at: new Date().toISOString()
-        }, { onConflict: "user_id" });
-      } catch (e) {
-        console.warn("⚠ 回推 username 失败:", e?.message || e);
-      }
     }
 
     /* 拉取完毕后刷新首页 UI */
-    if (typeof renderTodayTasks === "function") renderTodayTasks();
-    if (typeof renderHeatmap === "function") renderHeatmap();
-    if (typeof renderProfileCard === "function") renderProfileCard();
-    if (typeof renderCourseProgress === "function") renderCourseProgress();
-    if (typeof renderCountdown === "function") renderCountdown();
+    refreshAllViews();
     console.log("✅ 云端数据拉取完成", { source, forceCloud });
+    progress("云端数据读取完成");
     return { ok: true };
   } catch (err) {
     console.error("❌ 云端数据拉取失败:", err);
@@ -729,7 +1016,7 @@ function buildTaskBaseRow(task) {
     detail: task.detail || "",
     type: task.type || "讲义",
     done: task.done,
-    date: task.date,
+    date: task.workingDate || task.date,
     unit_id: task.unitId || ""
   };
 }
@@ -737,6 +1024,11 @@ function buildTaskBaseRow(task) {
 function buildTaskExtraRow(task) {
   return {
     ...buildTaskBaseRow(task),
+    planned_date: task.plannedDate || task.date || null,
+    working_date: task.workingDate || task.date || null,
+    completed_at: task.completedAt || null,
+    rollover_count: Number(task.rolloverCount || 0),
+    rollover_mode: task.rolloverMode || null,
     recommended_from_unit_id: task.recommendedFromUnitId || null,
     recommended_for_date: task.recommendedForDate || null
   };
@@ -1098,6 +1390,75 @@ authStyles.textContent = `
     opacity: .7;
     cursor: default;
     transform: none;
+  }
+  .sync-decision-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 10002;
+    background: rgba(38,32,26,0.72);
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+  }
+  .sync-decision-box {
+    background: var(--bg-card);
+    border: 2px solid var(--border);
+    border-radius: var(--card-r);
+    box-shadow: 6px 6px 0 var(--border-dark);
+    padding: 20px;
+    width: min(460px, 92vw);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .sync-decision-title {
+    font-family: 'VT323', monospace;
+    font-size: 24px;
+    color: var(--accent-blue);
+    text-align: center;
+  }
+  .sync-decision-msg {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--text-sub);
+  }
+  .sync-decision-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .sync-decision-primary,
+  .sync-decision-warning,
+  .sync-decision-ghost {
+    padding: 9px;
+    border-radius: var(--card-r);
+    font-size: 13px;
+    font-family: 'Noto Sans SC', sans-serif;
+    cursor: pointer;
+  }
+  .sync-decision-primary {
+    background: var(--accent-blue);
+    border: 2px solid #2a4070;
+    color: #fffdf7;
+    box-shadow: 3px 3px 0 #2a4070;
+  }
+  .sync-decision-warning {
+    background: #fff5df;
+    border: 2px solid var(--accent-gold);
+    color: #6b4a13;
+    box-shadow: 3px 3px 0 #7a5010;
+  }
+  .sync-decision-ghost {
+    background: transparent;
+    border: 2px solid var(--border);
+    color: var(--text-sub);
+  }
+  .sync-decision-primary:hover,
+  .sync-decision-warning:hover,
+  .sync-decision-ghost:hover {
+    transform: translate(-1px, -1px);
   }
 `;
 document.head.appendChild(authStyles);
