@@ -170,6 +170,9 @@ ul,ol{margin:0;padding-left:18px}
 
 /* Heatmap */
 .heatmap-card{padding:14px}
+.heatmap-head{display:flex;flex-direction:column;align-items:flex-start;gap:3px;margin-bottom:6px}
+.heatmap-head-title{line-height:1.05;white-space:nowrap}
+.heatmap-head-time{font-size:11px;color:var(--text-dim);font-family:"VT323",monospace;line-height:1.2;white-space:nowrap;text-align:left}
 .heatmap-week-labels{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:4px}
 .hm-wlabel{font-family:"VT323",monospace;font-size:11px;color:var(--text-dim);text-align:center}
 .heatmap-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}

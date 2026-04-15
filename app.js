@@ -927,7 +927,12 @@ function renderTodayTasks(){
   const planRate = getPlanningExecutionRate(tasks);
   const viewSettings = getTaskViewSettings();
 
-  const dayTasksRaw = tasks.filter(t => getTaskWorkingDate(t) === today);
+  const dayTasksRaw = tasks.filter(t => {
+    if(!t.done) return getTaskWorkingDate(t) === today;
+    const doneKey = getCompletedDateKey(t);
+    if(doneKey) return doneKey === today;
+    return getTaskWorkingDate(t) === today;
+  });
   const dayTasks = [...dayTasksRaw].sort((a,b) => {
     if(!!a.done === !!b.done) return 0;
     return a.done ? 1 : -1;
@@ -1239,9 +1244,10 @@ function buildHeatmapCardHtml(){
     const key = dateKey(year, month, d);
     const e = log[key];
     let level = 0;
-    if(e && e.done > 0){
-      if(e.done >= e.total) level = 3;
-      else if(e.done >= e.total / 2) level = 2;
+    const doneCount = Number(e?.done || 0);
+    if(doneCount > 0){
+      if(doneCount >= 4) level = 3;
+      else if(doneCount >= 2) level = 2;
       else level = 1;
     }
     const isToday = d === todayDate;
@@ -1251,9 +1257,9 @@ function buildHeatmapCardHtml(){
   }
 
   return `
-    <div class="card-header-row" style="margin-bottom:6px">
-      <span class="card-title">🔥 学习热力图</span>
-      <span style="font-size:11px;color:var(--text-dim);font-family:'VT323',monospace">${timeStr} 北京时间</span>
+    <div class="heatmap-head">
+      <span class="card-title heatmap-head-title">🔥 学习热力图</span>
+      <span class="heatmap-head-time">${timeStr} 北京时间</span>
     </div>
     <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px">${year}年${month}月</div>
     <div class="heatmap-week-labels">${dayLabels.map(d=>`<span class="hm-wlabel">${d}</span>`).join("")}</div>
@@ -1296,10 +1302,18 @@ function getWeekRange(refDateStr) {
   return days; // Mon → Sun
 }
 
+function getTaskboardDateKey(task){
+  if(task?.done){
+    const doneDate = getCompletedDateKey(task);
+    if(doneDate) return doneDate;
+  }
+  return getTaskWorkingDate(task);
+}
+
 function buildTaskboardToday(activeDate) {
   const date = activeDate || todayStr();
   const tasks = getTasks();
-  const dayTasks = tasks.filter(t => getTaskWorkingDate(t) === date)
+  const dayTasks = tasks.filter(t => getTaskboardDateKey(t) === date)
     .sort((a,b) => { if(!!a.done === !!b.done) return 0; return a.done ? 1 : -1; });
   return `
     <div class="date-selector-row" style="margin-bottom:10px">
@@ -1340,7 +1354,7 @@ function buildTaskboardWeek() {
     <div style="display:flex;flex-direction:column;gap:6px">
       ${weekDays.map((dayKey, i) => {
         const p = parseDateKey(dayKey);
-        const dayTasks = tasks.filter(t => getTaskWorkingDate(t) === dayKey);
+        const dayTasks = tasks.filter(t => getTaskboardDateKey(t) === dayKey);
         const done = dayTasks.filter(t => t.done);
         const pending = dayTasks.filter(t => !t.done);
         const isToday = dayKey === today;
@@ -1387,7 +1401,7 @@ function buildTaskboardMonth(expandedDate) {
   const tasksByDay = {};
   for(let d = 1; d <= daysInMonth; d++) {
     const key = dateKey(year, month, d);
-    const dt = tasks.filter(t => getTaskWorkingDate(t) === key);
+    const dt = tasks.filter(t => getTaskboardDateKey(t) === key);
     tasksByDay[key] = { done: dt.filter(t=>t.done).length, pending: dt.filter(t=>!t.done).length, tasks: dt };
   }
 
@@ -1461,7 +1475,7 @@ function buildTaskboardYear(expandedMonth) {
     let done = 0, pending = 0;
     for(let d = 1; d <= dim; d++) {
       const key = dateKey(year, m, d);
-      const dt = tasks.filter(t => getTaskWorkingDate(t) === key);
+      const dt = tasks.filter(t => getTaskboardDateKey(t) === key);
       done += dt.filter(t=>t.done).length;
       pending += dt.filter(t=>!t.done).length;
     }
@@ -1497,7 +1511,7 @@ function buildTaskboardYear(expandedMonth) {
     const monthTasks = [];
     for(let d = 1; d <= dim; d++) {
       const key = dateKey(year, expandedMonth, d);
-      const dt = tasks.filter(t => getTaskWorkingDate(t) === key);
+      const dt = tasks.filter(t => getTaskboardDateKey(t) === key);
       if(dt.length) monthTasks.push({ key, d, dt });
     }
     expandedHtml = `
@@ -1589,7 +1603,7 @@ function buildDashboard(){
 
 function refreshDashboardList(el, dateStr){
   const tasks    = getTasks();
-  const dayTasks = tasks.filter(t => getTaskWorkingDate(t) === dateStr);
+  const dayTasks = tasks.filter(t => getTaskboardDateKey(t) === dateStr);
   const list     = el.querySelector("#dt-list");
   if(!list) return;
   list.innerHTML = dayTasks.map(t=>`
@@ -1778,7 +1792,7 @@ function bindDashboardEvents(el){
         if(t) {
           const prev = getCompletedDateKey(t);
           t.done = !t.done;
-          t.completedAt = t.done ? new Date().toISOString() : "";
+          t.completedAt = t.done ? buildCompletedAtByDateKey(dashActiveDate) : "";
           saveTasks(ts);
           const now = getCompletedDateKey(t);
           if(prev) syncStudyLog(prev);
@@ -1823,7 +1837,7 @@ function bindDashboardEvents(el){
       cell.addEventListener("click", () => {
         const day = cell.dataset.day;
         if(!day) return;
-        const hasTasks = getTasks().some(t => getTaskWorkingDate(t) === day);
+        const hasTasks = getTasks().some(t => getTaskboardDateKey(t) === day);
         if(!hasTasks) return;
         dashExpandedDate = dashExpandedDate === day ? null : day;
         bodyEl.innerHTML = buildTaskboardMonth(dashExpandedDate);
