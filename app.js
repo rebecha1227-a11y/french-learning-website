@@ -1283,58 +1283,32 @@ function renderAiTip(){
 /* ══════════════════════════════════
    DASHBOARD (inner page)
 ══════════════════════════════════ */
-function buildDashboard(){
-  const today    = todayStr();
-  const log      = getStudyLog();
-  const tasks    = getTasks();
-  const todayTasks = tasks.filter(t => getTaskWorkingDate(t) === today);
-  const todayDone  = todayTasks.filter(t => t.done).length;
-  const weekDone   = getLast7DaysDone(log);
-  const overallCompletion = getPlanningExecutionRate(tasks);
-  const focus = todayTasks[0]?.type || "待设置";
 
-  const examDate = getExamDate();
-  return `<div class="dash-content-stack">
-  <div class="dash-metric-row">
-    <div class="dash-metric-box">
-      <span class="dash-metric-val">${todayDone}/${todayTasks.length}</span>
-      <span class="dash-metric-key">今日学习完成</span>
-    </div>
-    <div class="dash-metric-box">
-      <span class="dash-metric-val">${weekDone}</span>
-      <span class="dash-metric-key">近7天完成任务</span>
-    </div>
-    <div class="dash-metric-box">
-      <span class="dash-metric-val">${overallCompletion}%</span>
-      <span class="dash-metric-key">计划执行率</span>
-    </div>
-    <div class="dash-metric-box">
-      <span class="dash-metric-val">${esc(focus)}</span>
-      <span class="dash-metric-key">当前重心</span>
-    </div>
-  </div>
+/* ── Taskboard helpers ── */
+function getWeekRange(refDateStr) {
+  const ref = refDateStr || todayStr();
+  const p = parseDateKey(ref);
+  if(!p) return [];
+  const dow = getWeekdayIndex(p.year, p.month, p.day); // 0=Sun
+  const mondayOffset = dow === 0 ? -6 : 1 - dow;
+  const days = [];
+  for(let i = 0; i < 7; i++) days.push(shiftDateKey(ref, mondayOffset + i));
+  return days; // Mon → Sun
+}
 
-  <div class="card card-pad">
-    <div class="card-hdr"><span class="section-kicker">Exam</span><h4>考试目标设置</h4></div>
-    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-      <label style="font-size:13px;color:var(--text-sub)">目标考试日期</label>
-      <input id="dash-exam-input" type="date" value="${esc(examDate)}"
-        style="padding:6px 10px;background:var(--bg-inset);border:2px solid var(--border);
-               border-radius:var(--card-r);font-size:13px;color:var(--text-main)"/>
-      <button id="dash-exam-save" class="btn-primary" style="padding:6px 14px">保存</button>
-      <span id="dash-exam-msg" style="font-size:12px;color:var(--accent-teal)"></span>
-    </div>
-  </div>
-
-  <div class="card card-pad">
-    <div class="card-hdr"><span class="section-kicker">Tasks</span><h4>今日学习任务</h4></div>
-    <div class="date-selector-row">
-      <label style="font-size:12px;color:var(--text-dim)">选择日期</label>
-      <input id="dt-date" type="date" value="${today}"
+function buildTaskboardToday(activeDate) {
+  const date = activeDate || todayStr();
+  const tasks = getTasks();
+  const dayTasks = tasks.filter(t => getTaskWorkingDate(t) === date)
+    .sort((a,b) => { if(!!a.done === !!b.done) return 0; return a.done ? 1 : -1; });
+  return `
+    <div class="date-selector-row" style="margin-bottom:10px">
+      <label style="font-size:12px;color:var(--text-dim)">日期</label>
+      <input id="dt-date" type="date" value="${date}"
         style="padding:5px 8px;background:var(--bg-inset);border:2px solid var(--border);
                border-radius:var(--card-r);font-size:12px;color:var(--text-main)"/>
     </div>
-    <div class="add-task-row">
+    <div class="add-task-row" style="margin-bottom:10px">
       <input class="add-task-input" id="dt-inp" type="text" placeholder="添加任务…"/>
       <select class="add-task-select" id="dt-sel">
         <option>讲义</option><option>练习</option><option>复盘</option>
@@ -1342,9 +1316,271 @@ function buildDashboard(){
       </select>
       <button class="add-task-btn" id="dt-add">＋</button>
     </div>
-    <div class="stack" id="dt-list"></div>
+    <div class="stack" id="dt-list">
+      ${dayTasks.length ? dayTasks.map(t => `
+        <div class="task-item ${t.done ? "done" : ""}" data-tid="${esc(t.id)}">
+          <div class="task-cb">${t.done ? "✓" : ""}</div>
+          <div class="task-body">
+            <div class="task-title">${esc(t.title)}</div>
+            ${t.detail ? `<div class="task-detail">${esc(t.detail)}</div>` : ""}
+          </div>
+          <span class="task-tag" data-t="${esc(t.type)}">${esc(t.type)}</span>
+          <button class="btn-danger btn-small" data-dt="${esc(t.id)}" style="margin-left:4px;flex-shrink:0">✕</button>
+        </div>`).join("")
+      : `<div class="task-empty">这天还没有任务，先添加一个学习目标吧。</div>`}
+    </div>`;
+}
+
+function buildTaskboardWeek() {
+  const today = todayStr();
+  const weekDays = getWeekRange(today);
+  const tasks = getTasks();
+  const weekdayNames = ["周一","周二","周三","周四","周五","周六","周日"];
+  return `
+    <div style="display:flex;flex-direction:column;gap:6px">
+      ${weekDays.map((dayKey, i) => {
+        const p = parseDateKey(dayKey);
+        const dayTasks = tasks.filter(t => getTaskWorkingDate(t) === dayKey);
+        const done = dayTasks.filter(t => t.done);
+        const pending = dayTasks.filter(t => !t.done);
+        const isToday = dayKey === today;
+        return `
+          <div style="background:${isToday ? "var(--bg-inset)" : "var(--bg-panel)"};
+                      border:2px solid ${isToday ? "var(--accent-blue)" : "var(--border)"};
+                      border-radius:var(--card-r);overflow:hidden">
+            <div style="display:flex;align-items:center;gap:10px;padding:9px 12px">
+              <span style="font-family:'VT323',monospace;font-size:15px;min-width:32px;
+                           color:${isToday ? "var(--accent-blue)" : "var(--text-dim)"}">${weekdayNames[i]}</span>
+              <span style="font-size:12px;color:var(--text-sub)">${p?.month}/${p?.day}</span>
+              ${isToday ? `<span style="font-size:10px;padding:1px 6px;background:var(--accent-blue);color:white;border-radius:2px">今日</span>` : ""}
+              <span style="margin-left:auto;display:flex;gap:10px;align-items:center">
+                ${done.length ? `<span style="font-size:11px;color:var(--accent-green)">✓ ${done.length}</span>` : ""}
+                ${pending.length ? `<span style="font-size:11px;color:var(--accent-rose)">○ ${pending.length}</span>` : ""}
+                ${!dayTasks.length ? `<span style="font-size:11px;color:var(--text-dim)">无任务</span>` : ""}
+              </span>
+            </div>
+            ${dayTasks.length ? `
+              <div style="padding:0 12px 9px;display:flex;flex-direction:column;gap:0">
+                ${[...done, ...pending].map(t => `
+                  <div style="display:flex;align-items:center;gap:8px;padding:5px 0;
+                               border-top:1px solid var(--border-light)">
+                    <span style="font-size:13px;color:${t.done ? "var(--accent-green)" : "var(--text-dim)"};flex-shrink:0">${t.done ? "✓" : "○"}</span>
+                    <span style="font-size:12px;flex:1;color:${t.done ? "var(--text-dim)" : "var(--text-main)"};
+                                 text-decoration:${t.done ? "line-through" : "none"}">${esc(t.title)}</span>
+                    <span class="task-tag" data-t="${esc(t.type)}" style="pointer-events:none">${esc(t.type)}</span>
+                  </div>`).join("")}
+              </div>` : ""}
+          </div>`;
+      }).join("")}
+    </div>`;
+}
+
+function buildTaskboardMonth(expandedDate) {
+  const today = todayStr();
+  const p = getBjtParts();
+  const { year, month } = p;
+  const tasks = getTasks();
+  const firstDayOfWeek = getWeekdayIndex(year, month, 1);
+  const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  const dayLabels = ["日","一","二","三","四","五","六"];
+
+  const tasksByDay = {};
+  for(let d = 1; d <= daysInMonth; d++) {
+    const key = dateKey(year, month, d);
+    const dt = tasks.filter(t => getTaskWorkingDate(t) === key);
+    tasksByDay[key] = { done: dt.filter(t=>t.done).length, pending: dt.filter(t=>!t.done).length, tasks: dt };
+  }
+
+  let cells = "";
+  for(let i=0; i<firstDayOfWeek; i++) cells += `<div></div>`;
+  for(let d=1; d<=daysInMonth; d++) {
+    const key = dateKey(year, month, d);
+    const td = tasksByDay[key];
+    const isToday = key === today;
+    const isExpanded = key === expandedDate;
+    const hasTasks = td.done > 0 || td.pending > 0;
+    let bg = "var(--bg-panel)", bc = "var(--border-light)";
+    if(isToday) { bg = "rgba(63,98,160,0.08)"; bc = "var(--accent-blue)"; }
+    else if(hasTasks && td.pending === 0) { bg = "rgba(80,127,70,0.1)"; bc = "var(--accent-green)"; }
+    else if(hasTasks && td.done > 0) { bg = "rgba(184,131,46,0.1)"; bc = "var(--accent-gold)"; }
+    cells += `
+      <div class="month-day-cell" data-day="${esc(key)}" style="
+        background:${bg};border:1px solid ${bc};border-radius:2px;padding:4px 3px;
+        cursor:${hasTasks?"pointer":"default"};min-height:44px;
+        ${isExpanded ? "outline:2px solid var(--accent-blue);outline-offset:1px" : ""}">
+        <div style="font-size:11px;font-weight:600;color:${isToday?"var(--accent-blue)":"var(--text-sub)"};text-align:center">${d}</div>
+        ${td.done > 0 ? `<div style="font-size:9px;color:var(--accent-green);text-align:center">✓${td.done}</div>` : ""}
+        ${td.pending > 0 ? `<div style="font-size:9px;color:var(--accent-rose);text-align:center">○${td.pending}</div>` : ""}
+      </div>`;
+  }
+
+  let expandedHtml = "";
+  if(expandedDate && tasksByDay[expandedDate]) {
+    const ep = parseDateKey(expandedDate);
+    const ed = tasksByDay[expandedDate];
+    expandedHtml = `
+      <div style="margin-top:10px;padding:11px;background:var(--bg-inset);border:1px solid var(--border-light);border-radius:var(--card-r)">
+        <div style="font-family:'VT323',monospace;font-size:15px;color:var(--text-main);margin-bottom:7px">${ep?.month}月${ep?.day}日 · 任务详情</div>
+        ${ed.tasks.length ? ed.tasks.map(t=>`
+          <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border-light)">
+            <span style="color:${t.done?"var(--accent-green)":"var(--text-dim)"}">${t.done?"✓":"○"}</span>
+            <span style="flex:1;font-size:12px;color:${t.done?"var(--text-dim)":"var(--text-main)"};
+                         text-decoration:${t.done?"line-through":"none"}">${esc(t.title)}</span>
+            <span class="task-tag" data-t="${esc(t.type)}" style="pointer-events:none">${esc(t.type)}</span>
+          </div>`).join("")
+        : `<div style="font-size:12px;color:var(--text-dim)">这天没有任务记录</div>`}
+      </div>`;
+  }
+
+  return `
+    <div style="font-size:13px;font-weight:500;color:var(--text-sub);margin-bottom:8px">${year}年${month}月
+      <span style="font-size:11px;color:var(--text-dim);font-weight:400;margin-left:8px">点击有任务的日期查看详情</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:4px">
+      ${dayLabels.map(d=>`<div style="text-align:center;font-size:11px;color:var(--text-dim);padding:3px;font-family:'VT323',monospace">${d}</div>`).join("")}
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px">${cells}</div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px;font-size:11px;color:var(--text-dim)">
+      <span><span style="display:inline-block;width:10px;height:10px;background:rgba(80,127,70,0.2);border:1px solid var(--accent-green);border-radius:1px;vertical-align:middle"></span> 全部完成</span>
+      <span><span style="display:inline-block;width:10px;height:10px;background:rgba(184,131,46,0.15);border:1px solid var(--accent-gold);border-radius:1px;vertical-align:middle"></span> 部分完成</span>
+      <span><span style="display:inline-block;width:10px;height:10px;background:var(--bg-panel);border:1px solid var(--border-light);border-radius:1px;vertical-align:middle"></span> 待办</span>
+    </div>
+    <div id="month-expanded-detail">${expandedHtml}</div>`;
+}
+
+function buildTaskboardYear(expandedMonth) {
+  const p = getBjtParts();
+  const { year } = p;
+  const currentMonth = p.month;
+  const tasks = getTasks();
+  const monthNames = ["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"];
+
+  const months = Array.from({length:12}, (_,i) => {
+    const m = i + 1;
+    const dim = new Date(Date.UTC(year, m, 0)).getUTCDate();
+    let done = 0, pending = 0;
+    for(let d = 1; d <= dim; d++) {
+      const key = dateKey(year, m, d);
+      const dt = tasks.filter(t => getTaskWorkingDate(t) === key);
+      done += dt.filter(t=>t.done).length;
+      pending += dt.filter(t=>!t.done).length;
+    }
+    return { m, done, pending, total: done+pending };
+  });
+
+  const cardsHtml = months.map(({ m, done, pending, total }) => {
+    const isCurrent = m === currentMonth;
+    const isExpanded = m === expandedMonth;
+    const pct = total > 0 ? Math.round(done/total*100) : 0;
+    return `
+      <div class="month-year-card" data-month="${m}" style="
+        padding:10px;background:${isCurrent?"var(--bg-inset)":"var(--bg-panel)"};
+        border:2px solid ${isCurrent?"var(--accent-blue)":isExpanded?"var(--accent-teal)":"var(--border)"};
+        border-radius:var(--card-r);cursor:pointer;transition:all var(--transition)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <span style="font-family:'VT323',monospace;font-size:16px;
+                       color:${isCurrent?"var(--accent-blue)":"var(--text-main)"}">${monthNames[m-1]}</span>
+          ${isCurrent?`<span style="font-size:9px;padding:1px 5px;background:var(--accent-blue);color:white;border-radius:2px">本月</span>`:""}
+        </div>
+        <div style="font-size:11px;color:var(--text-sub)">
+          ${total ? `<span style="color:var(--accent-green)">✓${done}</span>  <span style="color:var(--accent-rose)">○${pending}</span>` : `<span style="color:var(--text-dim)">无任务</span>`}
+        </div>
+        ${total ? `<div style="margin-top:5px;height:3px;background:var(--bg-card2);border-radius:2px;overflow:hidden">
+          <div style="height:100%;background:var(--accent-teal);width:${pct}%"></div>
+        </div>` : ""}
+      </div>`;
+  }).join("");
+
+  let expandedHtml = "";
+  if(expandedMonth) {
+    const dim = new Date(Date.UTC(year, expandedMonth, 0)).getUTCDate();
+    const monthTasks = [];
+    for(let d = 1; d <= dim; d++) {
+      const key = dateKey(year, expandedMonth, d);
+      const dt = tasks.filter(t => getTaskWorkingDate(t) === key);
+      if(dt.length) monthTasks.push({ key, d, dt });
+    }
+    expandedHtml = `
+      <div style="margin-top:10px;padding:11px;background:var(--bg-inset);border:1px solid var(--border-light);border-radius:var(--card-r)">
+        <div style="font-family:'VT323',monospace;font-size:15px;color:var(--text-main);margin-bottom:8px">${year}年${monthNames[expandedMonth-1]} · 任务详情</div>
+        ${monthTasks.length ? monthTasks.map(({ key, d, dt }) => `
+          <div style="margin-bottom:8px">
+            <div style="font-size:11px;color:var(--text-dim);margin-bottom:3px">${expandedMonth}月${d}日</div>
+            ${dt.map(t=>`
+              <div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--border-light)">
+                <span style="color:${t.done?"var(--accent-green)":"var(--text-dim)"}">${t.done?"✓":"○"}</span>
+                <span style="flex:1;font-size:12px;color:${t.done?"var(--text-dim)":"var(--text-main)"};
+                             text-decoration:${t.done?"line-through":"none"}">${esc(t.title)}</span>
+                <span class="task-tag" data-t="${esc(t.type)}" style="pointer-events:none">${esc(t.type)}</span>
+              </div>`).join("")}
+          </div>`).join("")
+        : `<div style="font-size:12px;color:var(--text-dim)">这个月没有任务记录</div>`}
+      </div>`;
+  }
+
+  return `
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:7px">${cardsHtml}</div>
+    <div id="year-expanded-detail">${expandedHtml}</div>`;
+}
+
+function buildDashboard(){
+  const today    = todayStr();
+  const log      = getStudyLog();
+  const tasks    = getTasks();
+  const todayTasks = tasks.filter(t => getTaskWorkingDate(t) === today);
+  const todayDone  = todayTasks.filter(t => t.done).length;
+  const weekDone   = getLast7DaysDone(log);
+  const examDate   = getExamDate();
+  const days       = getCountdownDays();
+
+  return `<div class="dash-content-stack">
+
+  <!-- ── 三格指标 ── -->
+  <div class="dash-metric-row" style="grid-template-columns:1fr 1fr 1fr">
+    <div class="dash-metric-box">
+      <span class="dash-metric-val">${todayDone}<small style="font-size:14px;color:var(--text-dim)">/${todayTasks.length}</small></span>
+      <span class="dash-metric-key">今日学习完成</span>
+    </div>
+    <div class="dash-metric-box">
+      <span class="dash-metric-val">${weekDone}</span>
+      <span class="dash-metric-key">近7天完成任务</span>
+    </div>
+    <div class="dash-metric-box" style="position:relative">
+      <span class="dash-metric-val" style="color:var(--accent-rose)">${days}</span>
+      <span class="dash-metric-key" id="dash-exam-key-label">距考试 · ${esc(examDate)}</span>
+      <button id="dash-exam-edit-btn"
+        style="position:absolute;top:7px;right:8px;font-size:10px;padding:2px 7px;
+               background:var(--bg-card2);border:1px solid var(--border);border-radius:var(--card-r);
+               color:var(--text-dim);cursor:pointer;line-height:1.4;font-family:inherit">设置</button>
+      <div id="dash-exam-popover"
+        style="display:none;position:absolute;top:calc(100% + 6px);right:0;z-index:60;
+               background:var(--bg-card);border:2px solid var(--border);border-radius:var(--card-r);
+               padding:13px;box-shadow:var(--px-shadow);min-width:230px">
+        <div style="font-size:12px;color:var(--text-sub);margin-bottom:8px;font-weight:500">自定义考试日期</div>
+        <input id="dash-exam-input" type="date" value="${esc(examDate)}"
+          style="width:100%;padding:6px 8px;background:var(--bg-inset);border:2px solid var(--border);
+                 border-radius:var(--card-r);font-size:12px;color:var(--text-main);display:block;margin-bottom:8px"/>
+        <button id="dash-exam-save" class="btn-primary" style="width:100%;padding:7px">保存</button>
+        <span id="dash-exam-msg" style="display:block;font-size:11px;color:var(--accent-teal);margin-top:5px;min-height:14px"></span>
+      </div>
+    </div>
   </div>
 
+  <!-- ── 任务看板 ── -->
+  <div class="card card-pad">
+    <div class="card-hdr" style="margin-bottom:12px">
+      <span class="section-kicker">Tasks</span><h4>任务看板</h4>
+    </div>
+    <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap" id="taskboard-tabs">
+      <button class="unit-tab active" data-tb="today">今日</button>
+      <button class="unit-tab" data-tb="week">本周</button>
+      <button class="unit-tab" data-tb="month">本月</button>
+      <button class="unit-tab" data-tb="year">今年</button>
+    </div>
+    <div id="taskboard-body"></div>
+  </div>
+
+  <!-- ── 热力图 ── -->
   <div class="card card-pad">
     <div id="dt-heatmap-card">${buildHeatmapCardHtml()}</div>
   </div>
@@ -1429,7 +1665,32 @@ function refreshDashboardHeatmapIfActive(){
 }
 
 function bindDashboardEvents(el){
-  let activeDate = todayStr();
+  let dashActiveTab  = "today";
+  let dashActiveDate = todayStr();
+  let dashExpandedDate  = null;
+  let dashExpandedMonth = null;
+
+  /* ── Exam date popover ── */
+  const editBtn = el.querySelector("#dash-exam-edit-btn");
+  const popover = el.querySelector("#dash-exam-popover");
+  let popoverCloseHandler = null;
+
+  editBtn?.addEventListener("click", e => {
+    e.stopPropagation();
+    const nowHidden = popover.style.display === "none" || !popover.style.display;
+    popover.style.display = nowHidden ? "block" : "none";
+    if(nowHidden) {
+      if(popoverCloseHandler) document.removeEventListener("click", popoverCloseHandler);
+      popoverCloseHandler = ev => {
+        if(!popover.contains(ev.target) && ev.target !== editBtn) {
+          popover.style.display = "none";
+          document.removeEventListener("click", popoverCloseHandler);
+          popoverCloseHandler = null;
+        }
+      };
+      setTimeout(() => document.addEventListener("click", popoverCloseHandler), 0);
+    }
+  });
 
   el.querySelector("#dash-exam-save")?.addEventListener("click", () => {
     const val = el.querySelector("#dash-exam-input")?.value;
@@ -1438,46 +1699,153 @@ function bindDashboardEvents(el){
     if(window.syncExamDate) syncExamDate(val);
     renderCountdown(); renderProfileCard();
     document.getElementById("topbar-days").textContent = getCountdownDays();
+    const keyLabel = el.querySelector("#dash-exam-key-label");
+    if(keyLabel) keyLabel.textContent = `距考试 · ${val}`;
+    const valEl = el.querySelector(".dash-metric-box:nth-child(3) .dash-metric-val");
+    if(valEl) valEl.textContent = getCountdownDays();
     const msg = el.querySelector("#dash-exam-msg");
-    if(msg){ msg.textContent="✓ 已保存"; setTimeout(()=>msg.textContent="",2000); }
+    if(msg) { msg.textContent = "✓ 已保存"; setTimeout(()=>msg.textContent="",2000); }
+    popover.style.display = "none";
   });
 
-  el.querySelector("#dt-date")?.addEventListener("change", e => {
-    activeDate = e.target.value;
-    refreshDashboardList(el, activeDate);
-  });
+  /* ── Taskboard tabs ── */
+  const tabsEl  = el.querySelector("#taskboard-tabs");
+  const bodyEl  = el.querySelector("#taskboard-body");
 
-  refreshDashboardList(el, activeDate);
-
-  const addFn = () => {
-    const inp = el.querySelector("#dt-inp");
-    const sel = el.querySelector("#dt-sel");
-    const v   = inp.value.trim();
-    if(!v) return;
-    const ts  = getTasks();
-    const newTask = {
-      id:"t-"+Date.now(),
-      title:v,
-      type:sel.value,
-      done:false,
-      detail:"",
-      date:activeDate,
-      plannedDate: activeDate,
-      workingDate: activeDate,
-      completedAt: "",
-      rolloverCount: 0,
-      rolloverMode: ""
-    };
-    ts.push(newTask);
-    saveTasks(ts);
-    if(window.syncTask) syncTask(newTask);
-    inp.value = "";
-    refreshDashboardList(el, activeDate);
-    refreshDashboardHeatmap(el);
-    renderTodayTasks(); renderHeatmap(); renderProfileCard(); renderCourseProgress();
+  const renderView = () => {
+    if(dashActiveTab === "today") {
+      bodyEl.innerHTML = buildTaskboardToday(dashActiveDate);
+      bindTodayEvents();
+    } else if(dashActiveTab === "week") {
+      bodyEl.innerHTML = buildTaskboardWeek();
+    } else if(dashActiveTab === "month") {
+      bodyEl.innerHTML = buildTaskboardMonth(dashExpandedDate);
+      bindMonthEvents();
+    } else if(dashActiveTab === "year") {
+      bodyEl.innerHTML = buildTaskboardYear(dashExpandedMonth);
+      bindYearEvents();
+    }
   };
-  el.querySelector("#dt-add")?.addEventListener("click", addFn);
-  el.querySelector("#dt-inp")?.addEventListener("keydown", e => { if(e.key==="Enter") addFn(); });
+
+  tabsEl?.querySelectorAll("[data-tb]").forEach(btn =>
+    btn.addEventListener("click", () => {
+      dashActiveTab = btn.dataset.tb;
+      dashExpandedDate  = null;
+      dashExpandedMonth = null;
+      tabsEl.querySelectorAll(".unit-tab").forEach(b =>
+        b.classList.toggle("active", b.dataset.tb === dashActiveTab));
+      renderView();
+    })
+  );
+
+  /* ── Today view events ── */
+  function bindTodayEvents() {
+    bodyEl.querySelector("#dt-date")?.addEventListener("change", e => {
+      dashActiveDate = e.target.value;
+      bodyEl.innerHTML = buildTaskboardToday(dashActiveDate);
+      bindTodayEvents();
+    });
+
+    const addFn = () => {
+      const inp = bodyEl.querySelector("#dt-inp");
+      const sel = bodyEl.querySelector("#dt-sel");
+      const v   = inp?.value?.trim();
+      if(!v) return;
+      const ts = getTasks();
+      const newTask = {
+        id:"t-"+Date.now(), title:v, type:sel?.value||"讲义",
+        done:false, detail:"",
+        date:dashActiveDate, plannedDate:dashActiveDate, workingDate:dashActiveDate,
+        completedAt:"", rolloverCount:0, rolloverMode:""
+      };
+      ts.push(newTask);
+      saveTasks(ts);
+      if(window.syncTask) syncTask(newTask);
+      inp.value = "";
+      bodyEl.innerHTML = buildTaskboardToday(dashActiveDate);
+      bindTodayEvents();
+      refreshDashboardHeatmap(el);
+      renderTodayTasks(); renderHeatmap(); renderProfileCard(); renderCourseProgress();
+    };
+    bodyEl.querySelector("#dt-add")?.addEventListener("click", addFn);
+    bodyEl.querySelector("#dt-inp")?.addEventListener("keydown", e => { if(e.key==="Enter") addFn(); });
+
+    bodyEl.querySelectorAll(".task-item[data-tid]").forEach(item =>
+      item.addEventListener("click", ev => {
+        if(ev.target.closest("[data-dt]") || ev.target.tagName === "SELECT") return;
+        const ts = getTasks();
+        const t  = ts.find(x => x.id === item.dataset.tid);
+        if(t) {
+          const prev = getCompletedDateKey(t);
+          t.done = !t.done;
+          t.completedAt = t.done ? new Date().toISOString() : "";
+          saveTasks(ts);
+          const now = getCompletedDateKey(t);
+          if(prev) syncStudyLog(prev);
+          if(now)  syncStudyLog(now);
+          if(window.syncTask) syncTask(t);
+          if(prev) syncStudyLogCloud(prev);
+          if(now)  syncStudyLogCloud(now);
+          bodyEl.innerHTML = buildTaskboardToday(dashActiveDate);
+          bindTodayEvents();
+          refreshDashboardHeatmap(el);
+          renderTodayTasks(); renderHeatmap(); renderProfileCard(); renderCourseProgress();
+        }
+      })
+    );
+
+    bodyEl.querySelectorAll("[data-dt]").forEach(btn =>
+      btn.addEventListener("click", ev => {
+        ev.stopPropagation();
+        const ts = getTasks();
+        const t  = ts.find(x => x.id === btn.dataset.dt);
+        if(window.deleteTask) deleteTask(btn.dataset.dt);
+        const cd = t ? getCompletedDateKey(t) : "";
+        saveTasks(ts.filter(x => x.id !== btn.dataset.dt));
+        if(cd) { syncStudyLog(cd); syncStudyLogCloud(cd); }
+        bodyEl.innerHTML = buildTaskboardToday(dashActiveDate);
+        bindTodayEvents();
+        refreshDashboardHeatmap(el);
+        renderTodayTasks(); renderHeatmap(); renderProfileCard(); renderCourseProgress();
+      })
+    );
+
+    bodyEl.querySelectorAll(".task-tag[data-t]").forEach(tagEl => {
+      const tid  = tagEl.closest("[data-tid]")?.dataset.tid;
+      const task = getTasks().find(t => t.id === tid);
+      if(task) makeTagEditable(tagEl, task);
+    });
+  }
+
+  /* ── Month view events ── */
+  function bindMonthEvents() {
+    bodyEl.querySelectorAll(".month-day-cell").forEach(cell =>
+      cell.addEventListener("click", () => {
+        const day = cell.dataset.day;
+        if(!day) return;
+        const hasTasks = getTasks().some(t => getTaskWorkingDate(t) === day);
+        if(!hasTasks) return;
+        dashExpandedDate = dashExpandedDate === day ? null : day;
+        bodyEl.innerHTML = buildTaskboardMonth(dashExpandedDate);
+        bindMonthEvents();
+      })
+    );
+  }
+
+  /* ── Year view events ── */
+  function bindYearEvents() {
+    bodyEl.querySelectorAll(".month-year-card").forEach(card =>
+      card.addEventListener("click", () => {
+        const m = Number(card.dataset.month);
+        dashExpandedMonth = dashExpandedMonth === m ? null : m;
+        bodyEl.innerHTML = buildTaskboardYear(dashExpandedMonth);
+        bindYearEvents();
+      })
+    );
+  }
+
+  /* Initial render */
+  renderView();
 }
 
 /* ══════════════════════════════════
