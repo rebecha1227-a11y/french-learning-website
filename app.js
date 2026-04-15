@@ -41,10 +41,18 @@ function normalizeTaskDates(task){
 }
 function getTaskWorkingDate(task){ return task?.workingDate || task?.date || task?.plannedDate || todayStr() }
 function getTaskPlannedDate(task){ return task?.plannedDate || task?.date || todayStr() }
+function buildCompletedAtByDateKey(dateStr){
+  const key = parseDateKey(dateStr) ? dateStr : todayStr();
+  return `${key}T12:00:00+08:00`;
+}
 function getCompletedDateKey(task){
   if(!task?.completedAt) return "";
-  const key = String(task.completedAt).slice(0,10);
-  return parseDateKey(key) ? key : "";
+  const raw = String(task.completedAt).trim();
+  if(parseDateKey(raw)) return raw;
+  const parsed = new Date(raw);
+  if(Number.isNaN(parsed.getTime())) return "";
+  const p = getBjtParts(parsed);
+  return dateKey(p.year, p.month, p.day);
 }
 function getTasks(){
   try{
@@ -360,6 +368,13 @@ function syncStudyLogCloud(dateStr){
   const log = getStudyLog();
   if(window.syncStudyLogDay && log[dateStr]) syncStudyLogDay(dateStr, log[dateStr]);
   if(window.deleteStudyLogDay && !log[dateStr]) deleteStudyLogDay(dateStr);
+}
+
+function refreshLearningWidgets(){
+  renderTodayTasks();
+  renderHeatmap();
+  renderProfileCard();
+  renderCourseProgress();
 }
 
 function toggleManualCheckin(dateStr){
@@ -904,50 +919,34 @@ function makeTagEditable(tagEl, task){
 /* ── TODAY TASKS (home page widget) ── */
 function renderTodayTasks(){
   const el       = document.getElementById("today-tasks-card");
+  if(!el) return;
   const today    = todayStr();
   const tasks    = getTasks();
   const log      = getStudyLog();
   const weekDone = getLast7DaysDone(log);
   const planRate = getPlanningExecutionRate(tasks);
-  const settings = getRolloverSettings();
   const viewSettings = getTaskViewSettings();
 
-  const activeDate = el.dataset.activeDate || today;
-  const dayTasksRaw = tasks.filter(t => getTaskWorkingDate(t) === activeDate);
+  const dayTasksRaw = tasks.filter(t => getTaskWorkingDate(t) === today);
   const dayTasks = [...dayTasksRaw].sort((a,b) => {
     if(!!a.done === !!b.done) return 0;
-    return a.done ? 1 : -1; // 已完成任务沉底
+    return a.done ? 1 : -1;
   });
   const visibleDayTasks = viewSettings.showCompleted ? dayTasks : dayTasks.filter(t => !t.done);
-  const todayTasks = tasks.filter(t => getTaskWorkingDate(t) === today);
-  const overdueTasks = tasks.filter(t => !t.done && getTaskWorkingDate(t) < today);
-  const doneCount  = dayTasksRaw.filter(t => t.done).length;
-  const undone     = dayTasksRaw.filter(t => !t.done).length;
-  const todayDone  = todayTasks.filter(t => t.done).length;
-  const activeLog  = log[activeDate];
-  const isManualChecked = !!activeLog?.manual;
-
-  el.dataset.activeDate = activeDate;
+  const doneCount = dayTasksRaw.filter(t => t.done).length;
+  const openMenuTaskId = el.dataset.openMenuTaskId || "";
 
   el.innerHTML = `
     <div class="card-header-row">
       <span class="card-title">📅 今日学习任务</span>
-      <span class="streak-badge">🔥 ${computeStreak(getStudyLog())}</span>
+      <span class="streak-badge">🔥 ${computeStreak(log)}</span>
     </div>
-    ${autoRolloverNotice ? `<div style="font-size:11px;color:var(--accent-teal);margin-bottom:6px">${esc(autoRolloverNotice)}</div>` : ""}
-    <div class="date-selector-row">
-      <label class="form-label" style="font-size:11px;color:var(--text-dim);margin-right:6px">日期</label>
-      <input class="form-input" id="ht-date" type="date" value="${activeDate}" style="width:auto;padding:4px 8px;font-size:12px"/>
-      <button class="btn-ghost btn-small" id="ht-checkin-toggle">${isManualChecked ? "取消补卡" : "补记打卡"}</button>
-      <button class="btn-ghost btn-small" id="ht-postpone-all" ${undone ? "" : "disabled"}>未完成→明天(${undone})</button>
-    </div>
-    <div class="date-selector-row" style="margin-top:6px;gap:8px">
-      <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-sub)">
+    <div class="date-selector-row" style="margin-top:-4px">
+      <span style="font-size:12px;color:var(--text-dim)">今日日期：${esc(today)}（北京时间）</span>
+      <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-sub);margin-left:auto">
         <input id="ht-show-completed" type="checkbox" ${viewSettings.showCompleted ? "checked" : ""}/>
-        显示已完成任务（${doneCount}）
+        显示已完成（${doneCount}）
       </label>
-      <input class="form-input" id="ht-move-date" type="date" value="${shiftDateKey(activeDate, 1)}" style="width:auto;padding:4px 8px;font-size:12px"/>
-      <button class="btn-ghost btn-small" id="ht-move-all-to-date" ${undone ? "" : "disabled"}>未完成→所选日期</button>
     </div>
     <div class="add-task-row" style="margin-top:8px">
       <input class="add-task-input" id="ht-inp" type="text" placeholder="添加今日任务…"/>
@@ -957,61 +956,53 @@ function renderTodayTasks(){
       </select>
       <button class="add-task-btn" id="ht-add">＋</button>
     </div>
-    <div class="date-selector-row" style="margin-bottom:8px;gap:8px">
-      <label class="form-label" style="font-size:11px;color:var(--text-dim)">自动顺延</label>
-      <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-sub)">
-        <input id="ht-auto-rollover" type="checkbox" ${settings.enabled ? "checked" : ""}/>
-        每日首次进入自动顺延逾期任务
-      </label>
-    </div>
     <div class="task-list" id="ht-list">
       ${visibleDayTasks.length ? visibleDayTasks.map(t => {
-        // FIX #7: 复习任务显示原题信息
         const isReview = t.type === "复习" && t.reviewData;
-        const wd = getTaskWorkingDate(t);
-        const pd = getTaskPlannedDate(t);
+        const doneDate = getCompletedDateKey(t);
+        const deferDate = shiftDateKey(today, 1);
+        const menuOpen = openMenuTaskId === t.id;
         return `
           <div class="task-item ${t.done?"done":""}" data-tid="${esc(t.id)}">
-            <div class="task-cb">${t.done?"✓":""}</div>
+            <button class="task-cb-btn" data-cb="${esc(t.id)}" aria-label="切换完成状态">
+              <div class="task-cb">${t.done?"✓":""}</div>
+            </button>
             <div class="task-body">
               <div class="task-title">${esc(t.title)}</div>
-              <div class="task-detail">计划 ${esc(pd)} · 执行 ${esc(wd)}${t.rolloverCount?` · 顺延${Number(t.rolloverCount)}次(${esc(t.rolloverMode || "manual")})`:""}</div>
               ${isReview ? `<div class="task-review-box">
                 <span class="task-review-q">📝 ${esc(t.reviewData.question?.slice(0,60) || "")}…</span>
                 <span class="task-review-ans">正确答案：${esc(t.reviewData.correctAnswer || "")}</span>
               </div>` : `<div class="task-detail">${esc(t.detail||t.time||"")}</div>`}
+              ${t.done && doneDate ? `<div class="task-detail">完成日期：${esc(doneDate)}</div>` : ""}
+              ${menuOpen ? `<div class="task-menu">
+                <div class="task-menu-row">
+                  <span class="task-menu-label">补卡完成</span>
+                  <input class="form-input task-menu-date" type="date" data-backfill-date="${esc(t.id)}" value="${esc(doneDate || today)}"/>
+                  <button class="btn-ghost btn-small" data-backfill="${esc(t.id)}">确认</button>
+                </div>
+                <div class="task-menu-row">
+                  <span class="task-menu-label">延期</span>
+                  <select class="add-task-select task-menu-select" data-defer-mode="${esc(t.id)}">
+                    <option value="tomorrow">明天</option>
+                    <option value="dayAfter">后天</option>
+                    <option value="custom">自定义日期</option>
+                  </select>
+                  <input class="form-input task-menu-date" type="date" data-defer-date="${esc(t.id)}" value="${esc(deferDate)}" style="display:none"/>
+                  <button class="btn-ghost btn-small" data-defer-apply="${esc(t.id)}" ${t.done ? "disabled" : ""}>确认</button>
+                </div>
+              </div>` : ""}
             </div>
-            <span class="task-tag" data-t="${esc(t.type)}">${esc(t.type)}</span>
-            ${!t.done ? `<button class="btn-ghost btn-small" data-pp="${esc(t.id)}" style="margin-left:4px;flex-shrink:0">顺延+1天</button>` : ""}
-            <button class="btn-danger btn-small" data-dt="${esc(t.id)}" style="margin-left:4px;flex-shrink:0">✕</button>
+            <div class="task-actions">
+              <span class="task-tag" data-t="${esc(t.type)}">${esc(t.type)}</span>
+              <button class="btn-ghost btn-small task-more-btn" data-settings="${esc(t.id)}" aria-label="任务设置">⋯</button>
+              <button class="btn-danger btn-small" data-dt="${esc(t.id)}" aria-label="删除任务">✕</button>
+            </div>
           </div>`;
-      }).join("") : `<div class="task-empty">${dayTasksRaw.length && !viewSettings.showCompleted ? "当前仅有已完成任务（已隐藏）" : "这一天还没有任务，先添加一个学习目标吧。"}。</div>`}
-    </div>
-    <div class="task-list" id="ht-overdue-list" style="margin-top:10px">
-      <div class="task-empty" style="border-style:solid">
-        逾期任务：${overdueTasks.length} 条
-        <button class="btn-ghost btn-small" id="ht-postpone-overdue" ${overdueTasks.length ? "" : "disabled"} style="margin-left:8px">逾期→明天</button>
-      </div>
-      ${overdueTasks.slice(0, 5).map(t => `
-        <div class="task-item" data-overdue-id="${esc(t.id)}">
-          <div class="task-cb"></div>
-          <div class="task-body">
-            <div class="task-title">${esc(t.title)}</div>
-            <div class="task-detail">计划 ${esc(getTaskPlannedDate(t))} · 当前 ${esc(getTaskWorkingDate(t))}</div>
-          </div>
-          <button class="btn-ghost btn-small" data-pp="${esc(t.id)}">顺延+1天</button>
-        </div>
-      `).join("")}
-    </div>
-    <div class="date-selector-row" style="margin-top:8px">
-      <label class="form-label" style="font-size:11px;color:var(--text-dim)">数据修复</label>
-      <input class="form-input" id="ht-repair-date" type="date" value="${activeDate}" style="width:auto;padding:4px 8px;font-size:12px"/>
-      <input class="form-input" id="ht-repair-done" type="number" min="1" value="1" style="width:74px;padding:4px 8px;font-size:12px"/>
-      <button class="btn-ghost btn-small" id="ht-repair-save">补录学习</button>
+      }).join("") : `<div class="task-empty">${dayTasksRaw.length && !viewSettings.showCompleted ? "当前仅有已完成任务（已隐藏）" : "今天还没有任务，先添加一个学习目标吧。"}。</div>`}
     </div>
     <div class="task-summary-row">
       <div class="task-summary-box">
-        <span class="task-summary-val">${todayDone}<small style="font-size:13px">/${todayTasks.length}</small></span>
+        <span class="task-summary-val">${doneCount}<small style="font-size:13px">/${dayTasksRaw.length}</small></span>
         <div class="task-summary-key">今日完成</div>
       </div>
       <div class="task-summary-box">
@@ -1026,82 +1017,10 @@ function renderTodayTasks(){
 
   autoRolloverNotice = "";
 
-  // FIX #5: 标签内联编辑
   el.querySelectorAll(".task-tag[data-t]").forEach(tagEl => {
     const tid = tagEl.closest("[data-tid]")?.dataset.tid;
     const task = dayTasks.find(t => t.id === tid);
     if(task) makeTagEditable(tagEl, task);
-  });
-
-  document.getElementById("ht-date").addEventListener("change", e => {
-    el.dataset.activeDate = e.target.value;
-    renderTodayTasks();
-    renderHeatmap();
-    renderProfileCard();
-  });
-
-  document.getElementById("ht-checkin-toggle")?.addEventListener("click", e => {
-    e.stopPropagation();
-    toggleManualCheckin(activeDate);
-    renderTodayTasks();
-    renderHeatmap();
-    renderProfileCard();
-  });
-
-  document.getElementById("ht-postpone-all")?.addEventListener("click", e => {
-    e.stopPropagation();
-    const ts = getTasks();
-    const nextDate = shiftDateKey(activeDate, 1);
-    const moved = [];
-    ts.forEach(t => {
-      if(getTaskWorkingDate(t) === activeDate && !t.done){
-        t.workingDate = nextDate;
-        t.date = nextDate;
-        t.rolloverCount = Number(t.rolloverCount || 0) + 1;
-        t.rolloverMode = "manual";
-        moved.push(t);
-      }
-    });
-    if(!moved.length) return;
-    saveTasks(ts);
-    trackMetric("rollover_manual_batch", moved.length);
-    if(window.syncTask) moved.forEach(t => syncTask(t));
-    renderTodayTasks();
-    renderHeatmap();
-    renderProfileCard();
-    renderCourseProgress();
-  });
-
-  const moveUnfinishedToDate = (targetDate, sourceType = "selected") => {
-    const ts = getTasks();
-    const moved = [];
-    ts.forEach(t => {
-      const shouldMove = sourceType === "overdue"
-        ? (!t.done && getTaskWorkingDate(t) < today)
-        : (!t.done && getTaskWorkingDate(t) === activeDate);
-      if(shouldMove){
-        t.workingDate = targetDate;
-        t.date = targetDate;
-        t.rolloverCount = Number(t.rolloverCount || 0) + 1;
-        t.rolloverMode = "manual";
-        moved.push(t);
-      }
-    });
-    if(!moved.length) return;
-    saveTasks(ts);
-    trackMetric(sourceType === "overdue" ? "overdue_clear_batch" : "rollover_manual_batch", moved.length);
-    if(window.syncTask) moved.forEach(t => syncTask(t));
-    renderTodayTasks();
-    renderHeatmap();
-    renderProfileCard();
-    renderCourseProgress();
-  };
-
-  document.getElementById("ht-move-all-to-date")?.addEventListener("click", e => {
-    e.stopPropagation();
-    const targetDate = document.getElementById("ht-move-date")?.value || shiftDateKey(activeDate, 1);
-    if(!parseDateKey(targetDate)) return;
-    moveUnfinishedToDate(targetDate, "selected");
   });
 
   document.getElementById("ht-show-completed")?.addEventListener("change", e => {
@@ -1109,122 +1028,21 @@ function renderTodayTasks(){
     renderTodayTasks();
   });
 
-  document.getElementById("ht-postpone-overdue")?.addEventListener("click", e => {
-    e.stopPropagation();
-    const targetDate = document.getElementById("ht-move-date")?.value || shiftDateKey(today, 1);
-    if(!parseDateKey(targetDate)) return;
-    moveUnfinishedToDate(targetDate, "overdue");
-  });
-
-  el.querySelectorAll(".task-item[data-tid]").forEach(item =>
-    item.addEventListener("click", e => {
-      if(e.target.closest("[data-dt]") || e.target.closest("[data-pp]") || e.target.tagName === "SELECT") return;
-      const ts = getTasks();
-      const t  = ts.find(x => x.id === item.dataset.tid);
-      if(t){
-        const prevCompletedDate = getCompletedDateKey(t);
-        t.done = !t.done;
-        t.completedAt = t.done ? new Date().toISOString() : "";
-        saveTasks(ts);
-        const nowCompletedDate = getCompletedDateKey(t);
-        if(prevCompletedDate) syncStudyLog(prevCompletedDate);
-        if(nowCompletedDate) syncStudyLog(nowCompletedDate);
-        if(window.syncTask) syncTask(t);
-        if(prevCompletedDate) syncStudyLogCloud(prevCompletedDate);
-        if(nowCompletedDate) syncStudyLogCloud(nowCompletedDate);
-        renderTodayTasks();
-        renderHeatmap();
-        renderProfileCard();
-        renderCourseProgress();
-      }
-    })
-  );
-
-  el.querySelectorAll("[data-dt]").forEach(btn =>
-    btn.addEventListener("click", e => {
-      e.stopPropagation();
-      const ts   = getTasks();
-      const t    = ts.find(x => x.id === btn.dataset.dt);
-      if(window.deleteTask) deleteTask(btn.dataset.dt);
-      const completedDate = t ? getCompletedDateKey(t) : "";
-      saveTasks(ts.filter(x => x.id !== btn.dataset.dt));
-      if(completedDate){
-        syncStudyLog(completedDate);
-        syncStudyLogCloud(completedDate);
-      }
-      renderTodayTasks();
-      renderHeatmap();
-      renderProfileCard();
-      renderCourseProgress();
-    })
-  );
-
-  el.querySelectorAll("[data-pp]").forEach(btn =>
-    btn.addEventListener("click", e => {
-      e.stopPropagation();
-      const ts = getTasks();
-      const t = ts.find(x => x.id === btn.dataset.pp);
-      if(!t || t.done) return;
-      const oldDate = getTaskWorkingDate(t);
-      const nextDate = shiftDateKey(oldDate, 1);
-      t.workingDate = nextDate;
-      t.date = nextDate;
-      t.rolloverCount = Number(t.rolloverCount || 0) + 1;
-      t.rolloverMode = "manual";
-      saveTasks(ts);
-      if(window.syncTask) syncTask(t);
-      trackMetric("rollover_manual_single", 1);
-      renderTodayTasks();
-      renderHeatmap();
-      renderProfileCard();
-      renderCourseProgress();
-    })
-  );
-
-  document.getElementById("ht-auto-rollover")?.addEventListener("change", e => {
-    const curr = getRolloverSettings();
-    curr.enabled = !!e.target.checked;
-    saveRolloverSettings(curr);
-    if(!curr.enabled) trackMetric("rollover_auto_disabled", 1);
-  });
-
-  document.getElementById("ht-repair-save")?.addEventListener("click", () => {
-    const d = document.getElementById("ht-repair-date")?.value || activeDate;
-    const doneVal = Number(document.getElementById("ht-repair-done")?.value || 1);
-    const done = Math.max(1, doneVal);
-    const logObj = getStudyLog();
-    const prev = logObj[d] || {};
-    logObj[d] = {
-      ...prev,
-      done: Math.max(Number(prev.done || 0), done),
-      total: Math.max(Number(prev.total || 0), done),
-      manual: true,
-      repaired: true
-    };
-    saveStudyLog(logObj);
-    syncStudyLogCloud(d);
-    trackMetric("repair_log_entries", 1);
-    renderTodayTasks();
-    renderHeatmap();
-    renderProfileCard();
-  });
-
   const addFn = () => {
-    const inp  = document.getElementById("ht-inp");
-    const sel  = document.getElementById("ht-sel");
-    const v    = inp.value.trim();
-    if(!v) return;
-    const ts   = getTasks();
-    const date = el.dataset.activeDate || today;
+    const inp = document.getElementById("ht-inp");
+    const sel = document.getElementById("ht-sel");
+    const title = inp.value.trim();
+    if(!title) return;
+    const ts = getTasks();
     const newTask = {
       id:"t-"+Date.now(),
-      title:v,
+      title,
       type:sel.value,
       done:false,
       detail:"",
-      date,
-      plannedDate: date,
-      workingDate: date,
+      date: today,
+      plannedDate: today,
+      workingDate: today,
       completedAt: "",
       rolloverCount: 0,
       rolloverMode: ""
@@ -1233,13 +1051,122 @@ function renderTodayTasks(){
     saveTasks(ts);
     if(window.syncTask) syncTask(newTask);
     inp.value = "";
-    renderTodayTasks();
-    renderHeatmap();
-    renderProfileCard();
-    renderCourseProgress();
+    refreshLearningWidgets();
   };
-  document.getElementById("ht-add").addEventListener("click", addFn);
-  document.getElementById("ht-inp").addEventListener("keydown", e => { if(e.key==="Enter") addFn(); });
+  document.getElementById("ht-add")?.addEventListener("click", addFn);
+  document.getElementById("ht-inp")?.addEventListener("keydown", e => { if(e.key==="Enter") addFn(); });
+
+  el.querySelectorAll("[data-cb]").forEach(btn =>
+    btn.addEventListener("click", e => {
+      e.stopPropagation();
+      const ts = getTasks();
+      const t = ts.find(x => x.id === btn.dataset.cb);
+      if(!t) return;
+      const prevCompletedDate = getCompletedDateKey(t);
+      if(t.done){
+        t.done = false;
+        t.completedAt = "";
+      } else {
+        t.done = true;
+        t.completedAt = buildCompletedAtByDateKey(today);
+      }
+      saveTasks(ts);
+      const nowCompletedDate = getCompletedDateKey(t);
+      if(prevCompletedDate) syncStudyLog(prevCompletedDate);
+      if(nowCompletedDate) syncStudyLog(nowCompletedDate);
+      if(window.syncTask) syncTask(t);
+      if(prevCompletedDate) syncStudyLogCloud(prevCompletedDate);
+      if(nowCompletedDate) syncStudyLogCloud(nowCompletedDate);
+      refreshLearningWidgets();
+    })
+  );
+
+  el.querySelectorAll("[data-dt]").forEach(btn =>
+    btn.addEventListener("click", e => {
+      e.stopPropagation();
+      const ts = getTasks();
+      const t = ts.find(x => x.id === btn.dataset.dt);
+      if(window.deleteTask) deleteTask(btn.dataset.dt);
+      const completedDate = t ? getCompletedDateKey(t) : "";
+      saveTasks(ts.filter(x => x.id !== btn.dataset.dt));
+      if(completedDate){
+        syncStudyLog(completedDate);
+        syncStudyLogCloud(completedDate);
+      }
+      refreshLearningWidgets();
+    })
+  );
+
+  el.querySelectorAll("[data-settings]").forEach(btn =>
+    btn.addEventListener("click", e => {
+      e.stopPropagation();
+      const tid = btn.dataset.settings;
+      el.dataset.openMenuTaskId = el.dataset.openMenuTaskId === tid ? "" : tid;
+      renderTodayTasks();
+    })
+  );
+
+  el.querySelectorAll("[data-backfill]").forEach(btn =>
+    btn.addEventListener("click", e => {
+      e.stopPropagation();
+      const tid = btn.dataset.backfill;
+      const input = el.querySelector(`[data-backfill-date="${tid}"]`);
+      const targetDate = input?.value || today;
+      if(!parseDateKey(targetDate)) return;
+      const ts = getTasks();
+      const t = ts.find(x => x.id === tid);
+      if(!t) return;
+      const prevCompletedDate = getCompletedDateKey(t);
+      t.done = true;
+      t.completedAt = buildCompletedAtByDateKey(targetDate);
+      saveTasks(ts);
+      const nowCompletedDate = getCompletedDateKey(t);
+      if(prevCompletedDate) syncStudyLog(prevCompletedDate);
+      if(nowCompletedDate) syncStudyLog(nowCompletedDate);
+      if(window.syncTask) syncTask(t);
+      if(prevCompletedDate) syncStudyLogCloud(prevCompletedDate);
+      if(nowCompletedDate) syncStudyLogCloud(nowCompletedDate);
+      el.dataset.openMenuTaskId = "";
+      refreshLearningWidgets();
+    })
+  );
+
+  el.querySelectorAll("[data-defer-mode]").forEach(sel =>
+    sel.addEventListener("change", () => {
+      const tid = sel.dataset.deferMode;
+      const customInput = el.querySelector(`[data-defer-date="${tid}"]`);
+      if(!customInput) return;
+      customInput.style.display = sel.value === "custom" ? "inline-flex" : "none";
+    })
+  );
+
+  el.querySelectorAll("[data-defer-apply]").forEach(btn =>
+    btn.addEventListener("click", e => {
+      e.stopPropagation();
+      const tid = btn.dataset.deferApply;
+      const modeEl = el.querySelector(`[data-defer-mode="${tid}"]`);
+      const customDateEl = el.querySelector(`[data-defer-date="${tid}"]`);
+      if(!modeEl) return;
+      const mode = modeEl.value;
+      let targetDate = shiftDateKey(today, 1);
+      if(mode === "dayAfter") targetDate = shiftDateKey(today, 2);
+      if(mode === "custom") targetDate = customDateEl?.value || "";
+      if(!parseDateKey(targetDate)) return;
+
+      const ts = getTasks();
+      const t = ts.find(x => x.id === tid);
+      if(!t || t.done) return;
+      t.workingDate = targetDate;
+      t.date = targetDate;
+      t.rolloverCount = Number(t.rolloverCount || 0) + 1;
+      t.rolloverMode = "manual";
+      saveTasks(ts);
+      if(window.syncTask) syncTask(t);
+      trackMetric("rollover_manual_single", 1);
+      el.dataset.openMenuTaskId = "";
+      refreshLearningWidgets();
+    })
+  );
 }
 
 /* ── COURSE PROGRESS ── */
@@ -1485,7 +1412,7 @@ function refreshDashboardList(el, dateStr){
       if(t){
         const prevCompletedDate = getCompletedDateKey(t);
         t.done = !t.done;
-        t.completedAt = t.done ? new Date().toISOString() : "";
+        t.completedAt = t.done ? buildCompletedAtByDateKey(todayStr()) : "";
         saveTasks(ts);
         const nowCompletedDate = getCompletedDateKey(t);
         if(prevCompletedDate) syncStudyLog(prevCompletedDate);
@@ -2353,4 +2280,9 @@ document.addEventListener("DOMContentLoaded", () => {
   renderCountdown();
   renderHeatmap();
   renderAiTip();
+  setInterval(() => {
+    renderTodayTasks();
+    renderHeatmap();
+    renderProfileCard();
+  }, 30000);
 });

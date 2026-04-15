@@ -113,16 +113,24 @@ ul,ol{margin:0;padding-left:18px}
 .card-title{font-size:20px;color:var(--text-main)}
 .streak-badge{font-size:14px;padding:2px 9px;background:var(--bg-inset);border:2px solid var(--accent-gold);border-radius:var(--card-r);color:var(--accent-gold);white-space:nowrap;box-shadow:2px 2px 0 #7a5010}
 .task-list{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
-.task-item{display:flex;align-items:flex-start;gap:9px;padding:9px 11px;background:var(--bg-panel);border:2px solid var(--border);border-radius:var(--card-r);cursor:pointer;box-shadow:2px 2px 0 var(--border-dark);transition:all var(--transition)}
+.task-item{display:flex;align-items:flex-start;gap:9px;padding:9px 11px;background:var(--bg-panel);border:2px solid var(--border);border-radius:var(--card-r);box-shadow:2px 2px 0 var(--border-dark);transition:all var(--transition)}
 .task-item:hover{background:var(--bg-inset);border-color:var(--accent-teal);transform:translate(-1px,-1px);box-shadow:3px 3px 0 var(--accent-teal)}
 .task-item.done{background:#eaf2e6;border-color:#a4c89a;box-shadow:2px 2px 0 #7aaa70}
+.task-cb-btn{padding:0;border:0;background:transparent;cursor:pointer;display:inline-flex;align-items:flex-start}
 .task-cb{flex-shrink:0;width:18px;height:18px;margin-top:2px;border:2px solid var(--border);border-radius:2px;background:var(--bg-inset);display:grid;place-items:center;font-size:11px;color:transparent;transition:all var(--transition)}
 .task-item.done .task-cb{background:var(--accent-teal);border-color:var(--accent-teal);color:white}
 .task-body{flex:1;min-width:0}
 .task-title{font-size:13px;font-weight:500;color:var(--text-main);margin-bottom:2px}
 .task-item.done .task-title{text-decoration:line-through;color:var(--text-dim)}
 .task-detail{font-size:11px;color:var(--text-sub);line-height:1.5}
+.task-actions{display:flex;align-items:flex-start;gap:4px;flex-shrink:0;margin-left:2px}
 .task-tag{flex-shrink:0;font-family:"VT323",monospace;font-size:12px;padding:1px 7px;border:1px solid;border-radius:2px;margin-top:2px;white-space:nowrap}
+.task-more-btn{min-width:28px;padding:4px 7px;line-height:1}
+.task-menu{margin-top:6px;padding:7px;border:1px solid var(--border-light);border-radius:var(--card-r);background:var(--bg-inset);display:flex;flex-direction:column;gap:6px}
+.task-menu-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.task-menu-label{font-size:11px;color:var(--text-dim);min-width:52px}
+.task-menu-date{width:auto;padding:4px 8px;font-size:12px}
+.task-menu-select{padding:4px 8px;font-size:12px}
 .task-tag[data-t="讲义"]{color:var(--accent-blue);border-color:var(--accent-blue);background:rgba(63,98,160,0.08)}
 .task-tag[data-t="练习"]{color:var(--accent-teal);border-color:var(--accent-teal);background:rgba(61,128,119,0.08)}
 .task-tag[data-t="复盘"]{color:var(--accent-rose);border-color:var(--accent-rose);background:rgba(168,88,88,0.08)}
