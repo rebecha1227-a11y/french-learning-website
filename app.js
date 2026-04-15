@@ -1220,38 +1220,28 @@ function renderCountdown(){
   });
 }
 
-/* ── FIX #4: 热力图——按月渲染 + 北京时间 + 正确的星期对应 ── */
-function renderHeatmap(){
-  const el  = document.getElementById("heatmap-card");
+function buildHeatmapCardHtml(){
   const log = getStudyLog();
-
   const nowParts = getBjtParts();
   const year = nowParts.year;
   const month = nowParts.month; // 1-based
   const todayDate = nowParts.day;
   const timeStr = getBjtClockText();
-
-  // 本月第一天是星期几（周日=0, 周一=1…）
   const firstDayOfWeek = getWeekdayIndex(year, month, 1);
-  // 本月总天数
   const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
-
-  // 星期标签，从周日开始
   const dayLabels = ["日","一","二","三","四","五","六"];
 
-  // 构建每一天的 cell，先填 offset 空格，再填日期格
   let cellsHtml = "";
-  // 空白占位（让1号对准正确的列）
   for(let i=0; i<firstDayOfWeek; i++){
     cellsHtml += `<div class="hm-cell hm-empty"></div>`;
   }
   for(let d=1; d<=daysInMonth; d++){
     const key = dateKey(year, month, d);
-    const e   = log[key];
+    const e = log[key];
     let level = 0;
     if(e && e.done > 0){
       if(e.done >= e.total) level = 3;
-      else if(e.done >= e.total/2) level = 2;
+      else if(e.done >= e.total / 2) level = 2;
       else level = 1;
     }
     const isToday = d === todayDate;
@@ -1260,7 +1250,7 @@ function renderHeatmap(){
       title="${year}年${month}月${d}日 ${weekday}${e?` — 完成${e.done}/${e.total}`:" — 未完成任务"}"></div>`;
   }
 
-  el.innerHTML = `
+  return `
     <div class="card-header-row" style="margin-bottom:6px">
       <span class="card-title">🔥 学习热力图</span>
       <span style="font-size:11px;color:var(--text-dim);font-family:'VT323',monospace">${timeStr} 北京时间</span>
@@ -1275,6 +1265,13 @@ function renderHeatmap(){
       <span class="hm-swatch" style="background:var(--accent-teal)"></span>
       多
     </div>`;
+}
+
+/* ── FIX #4: 热力图——按月渲染 + 北京时间 + 正确的星期对应 ── */
+function renderHeatmap(){
+  const el  = document.getElementById("heatmap-card");
+  if(!el) return;
+  el.innerHTML = buildHeatmapCardHtml();
 }
 
 function renderAiTip(){
@@ -1295,23 +1292,6 @@ function buildDashboard(){
   const weekDone   = getLast7DaysDone(log);
   const overallCompletion = getPlanningExecutionRate(tasks);
   const focus = todayTasks[0]?.type || "待设置";
-
-  // 热力图（按月，同 renderHeatmap 逻辑）
-  const p = getBjtParts();
-  const year = p.year;
-  const month = p.month;
-  const firstDayOfWeek = getWeekdayIndex(year, month, 1);
-  const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
-  const todayDate = p.day;
-  const dayLabels = ["日","一","二","三","四","五","六"];
-  let cellsHtml = "";
-  for(let i=0;i<firstDayOfWeek;i++) cellsHtml += `<div class="hm-cell hm-empty"></div>`;
-  for(let d=1;d<=daysInMonth;d++){
-    const key = dateKey(year, month, d);
-    const e=log[key]; let l=0;
-    if(e&&e.done>0){ l=e.done>=e.total?3:e.done>=e.total/2?2:1; }
-    cellsHtml += `<div class="hm-cell ${l===0?"":l===1?"l1":l===2?"l2":"l3"} ${d===todayDate?"hm-today":""}" title="${year}年${month}月${d}日 ${WEEKDAY_CN[getWeekdayIndex(year, month, d)]}"></div>`;
-  }
 
   const examDate = getExamDate();
   return `<div class="dash-content-stack">
@@ -1366,17 +1346,7 @@ function buildDashboard(){
   </div>
 
   <div class="card card-pad">
-    <div class="card-hdr"><span class="section-kicker">Heatmap</span><h4>学习热力图</h4></div>
-    <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px">${year}年${month}月</div>
-    <div class="heatmap-week-labels">${dayLabels.map(d=>`<span class="hm-wlabel">${d}</span>`).join("")}</div>
-    <div class="heatmap-grid" id="dt-heatmap">${cellsHtml}</div>
-    <div class="heatmap-legend">少
-      <span class="hm-swatch" style="background:var(--bg-card2)"></span>
-      <span class="hm-swatch" style="background:#c9dbc5"></span>
-      <span class="hm-swatch" style="background:#8ab88a"></span>
-      <span class="hm-swatch" style="background:var(--accent-teal)"></span>
-      多
-    </div>
+    <div id="dt-heatmap-card">${buildHeatmapCardHtml()}</div>
   </div>
   </div>`;
 }
@@ -1412,7 +1382,8 @@ function refreshDashboardList(el, dateStr){
       if(t){
         const prevCompletedDate = getCompletedDateKey(t);
         t.done = !t.done;
-        t.completedAt = t.done ? buildCompletedAtByDateKey(todayStr()) : "";
+        const completionDate = parseDateKey(dateStr) ? dateStr : getTaskWorkingDate(t);
+        t.completedAt = t.done ? buildCompletedAtByDateKey(completionDate) : "";
         saveTasks(ts);
         const nowCompletedDate = getCompletedDateKey(t);
         if(prevCompletedDate) syncStudyLog(prevCompletedDate);
@@ -1446,24 +1417,15 @@ function refreshDashboardList(el, dateStr){
 }
 
 function refreshDashboardHeatmap(el){
-  const hm  = el.querySelector("#dt-heatmap");
+  const hm  = el.querySelector("#dt-heatmap-card");
   if(!hm) return;
-  const log = getStudyLog();
-  const p = getBjtParts();
-  const year = p.year;
-  const month = p.month;
-  const firstDayOfWeek = getWeekdayIndex(year, month, 1);
-  const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
-  const todayDate = p.day;
-  let cellsHtml = "";
-  for(let i=0;i<firstDayOfWeek;i++) cellsHtml += `<div class="hm-cell hm-empty"></div>`;
-  for(let d=1;d<=daysInMonth;d++){
-    const key = dateKey(year, month, d);
-    const e=log[key]; let l=0;
-    if(e&&e.done>0){ l=e.done>=e.total?3:e.done>=e.total/2?2:1; }
-    cellsHtml += `<div class="hm-cell ${l===0?"":l===1?"l1":l===2?"l2":"l3"} ${d===todayDate?"hm-today":""}" title="${year}年${month}月${d}日 ${WEEKDAY_CN[getWeekdayIndex(year, month, d)]}"></div>`;
-  }
-  hm.innerHTML = cellsHtml;
+  hm.innerHTML = buildHeatmapCardHtml();
+}
+
+function refreshDashboardHeatmapIfActive(){
+  const page = document.getElementById("page-dashboard");
+  if(!page || !page.classList.contains("active")) return;
+  refreshDashboardHeatmap(page);
 }
 
 function bindDashboardEvents(el){
@@ -2284,5 +2246,6 @@ document.addEventListener("DOMContentLoaded", () => {
     renderTodayTasks();
     renderHeatmap();
     renderProfileCard();
+    refreshDashboardHeatmapIfActive();
   }, 30000);
 });
