@@ -282,6 +282,9 @@ ul,ol{margin:0;padding-left:18px}
 .unit-pbar{height:5px;background:var(--bg-card2);border:1px solid var(--border);border-radius:1px;overflow:hidden;margin:8px 0 3px}
 .unit-pbar-fill{height:100%;background:var(--accent-teal)}
 .unit-pct{font-family:"VT323",monospace;font-size:11px;color:var(--accent-teal)}
+.unit-card-start{border-color:var(--accent-blue);box-shadow:3px 3px 0 var(--accent-blue)}
+.unit-card-start::before{background:var(--accent-blue)}
+.unit-start-badge{display:inline-block;font-size:10px;font-weight:600;color:var(--accent-blue);background:rgba(96,165,250,.12);border:1px solid rgba(96,165,250,.35);border-radius:3px;padding:1px 5px;margin-bottom:5px;letter-spacing:0.03em}
 
 /* Unit detail */
 .unit-tabs{display:flex;gap:7px;margin:10px 0}

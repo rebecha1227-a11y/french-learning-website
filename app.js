@@ -1921,16 +1921,25 @@ function buildCurriculum(){
         </div>
         <p style="font-size:12px;color:var(--text-sub);margin-bottom:10px">${esc(book.caption)}</p>
         <div class="unit-grid">
-          ${book.units.map((unit,ui) => {
-            const p = computeUnitProgress(unit.id, bi, ui);
-            return `<button class="unit-card" data-unit-id="${esc(unit.id)}">
-              <span class="unit-code">${esc(unit.code)}</span>
-              <h5>${esc(unit.title)}</h5>
-              <p class="unit-focus">${esc(unit.focus)}</p>
-              <div class="unit-pbar"><div class="unit-pbar-fill" style="width:${p}%"></div></div>
-              <span class="unit-pct">${p}%</span>
-            </button>`;
-          }).join("")}
+          ${(()=>{
+            // Find if any unit in this book has been started
+            const anyStarted = book.units.some((_,ui2) => computeUnitProgress(book.units[ui2].id, bi, ui2) > 0);
+            // Also check if any previous book has progress
+            const prevBooksStarted = bi > 0;
+            return book.units.map((unit,ui) => {
+              const p = computeUnitProgress(unit.id, bi, ui);
+              // Show "推荐起点" on the very first unit of the first book if nothing started yet
+              const isRecommended = bi === 0 && ui === 0 && !anyStarted && !prevBooksStarted && p === 0;
+              return `<button class="unit-card${isRecommended ? " unit-card-start" : ""}" data-unit-id="${esc(unit.id)}">
+                ${isRecommended ? `<span class="unit-start-badge">▶ 从这里开始</span>` : ""}
+                <span class="unit-code">${esc(unit.code)}</span>
+                <h5>${esc(unit.title)}</h5>
+                <p class="unit-focus">${esc(unit.focus)}</p>
+                <div class="unit-pbar"><div class="unit-pbar-fill" style="width:${p}%"></div></div>
+                <span class="unit-pct">${p}%</span>
+              </button>`;
+            }).join("");
+          })()}
         </div>
       </div>`).join("")}`;
 }
