@@ -930,7 +930,7 @@ function makeTagEditable(tagEl, task){
   });
 }
 
-/* ── TODAY TASKS (home page widget — 只读+勾选，管理操作去内页) ── */
+/* ── TODAY TASKS (home page widget — 只读+勾选+顺延补卡) ── */
 function renderTodayTasks(){
   const el       = document.getElementById("today-tasks-card");
   if(!el) return;
@@ -939,6 +939,7 @@ function renderTodayTasks(){
   const log      = getStudyLog();
   const weekDone = getLast7DaysDone(log);
   const planRate = getPlanningExecutionRate(tasks);
+  const openMenuTaskId = el.dataset.openMenuTaskId || "";
 
   const dayTasksRaw = tasks.filter(t => {
     if(!t.done) return getTaskWorkingDate(t) === today;
@@ -967,6 +968,9 @@ function renderTodayTasks(){
         const rolloverInfo = t.rolloverCount > 0
           ? `<div class="task-rollover-info">↩ 顺延 ${t.rolloverCount} 次 · 原计划 ${formatDateCN(t.plannedDate)}</div>`
           : "";
+        const menuOpen = openMenuTaskId === t.id;
+        const doneDate = getCompletedDateKey(t);
+        const tomorrowKey = shiftDateKey(today, 1);
         return `
           <div class="task-item ${t.done?"done":""}" data-tid="${esc(t.id)}">
             <button class="task-cb-btn" data-cb="${esc(t.id)}" aria-label="切换完成状态">
@@ -975,9 +979,27 @@ function renderTodayTasks(){
             <div class="task-body">
               <div class="task-title">${esc(t.title)}</div>
               ${rolloverInfo}
+              ${menuOpen ? `<div class="task-menu">
+                <div class="task-menu-row">
+                  <span class="task-menu-label">顺延</span>
+                  <select class="add-task-select task-menu-select" data-defer-mode="${esc(t.id)}">
+                    <option value="tomorrow">明天</option>
+                    <option value="dayAfter">后天</option>
+                    <option value="custom">自定义日期</option>
+                  </select>
+                  <input class="form-input task-menu-date" type="date" data-defer-date="${esc(t.id)}" value="${esc(tomorrowKey)}" style="display:none"/>
+                  <button class="btn-ghost btn-small" data-defer-apply="${esc(t.id)}" ${t.done?"disabled":""}>确认</button>
+                </div>
+                <div class="task-menu-row">
+                  <span class="task-menu-label">补卡</span>
+                  <input class="form-input task-menu-date" type="date" data-backfill-date="${esc(t.id)}" value="${esc(doneDate||today)}"/>
+                  <button class="btn-ghost btn-small" data-backfill="${esc(t.id)}">确认</button>
+                </div>
+              </div>` : ""}
             </div>
             <div class="task-actions">
               <span class="task-tag" data-t="${esc(t.type)}" style="pointer-events:none">${esc(t.type)}</span>
+              <button class="btn-ghost btn-small task-more-btn" data-settings="${esc(t.id)}" aria-label="更多操作">⋯</button>
             </div>
           </div>`;
       }).join("") : `<div class="task-empty">今天还没有任务，去今日学习页添加吧。</div>`}
@@ -1002,6 +1024,7 @@ function renderTodayTasks(){
 
   autoRolloverNotice = "";
 
+  /* 勾选完成 */
   el.querySelectorAll("[data-cb]").forEach(btn =>
     btn.addEventListener("click", e => {
       e.stopPropagation();
@@ -1009,20 +1032,85 @@ function renderTodayTasks(){
       const t = ts.find(x => x.id === btn.dataset.cb);
       if(!t) return;
       const prevCompletedDate = getCompletedDateKey(t);
-      if(t.done){
-        t.done = false;
-        t.completedAt = "";
-      } else {
-        t.done = true;
-        t.completedAt = buildCompletedAtByDateKey(today);
-      }
+      t.done = !t.done;
+      t.completedAt = t.done ? buildCompletedAtByDateKey(today) : "";
       saveTasks(ts);
       const nowCompletedDate = getCompletedDateKey(t);
       if(prevCompletedDate) syncStudyLog(prevCompletedDate);
-      if(nowCompletedDate) syncStudyLog(nowCompletedDate);
+      if(nowCompletedDate)  syncStudyLog(nowCompletedDate);
       if(window.syncTask) syncTask(t);
       if(prevCompletedDate) syncStudyLogCloud(prevCompletedDate);
-      if(nowCompletedDate) syncStudyLogCloud(nowCompletedDate);
+      if(nowCompletedDate)  syncStudyLogCloud(nowCompletedDate);
+      refreshLearningWidgets();
+    })
+  );
+
+  /* ⋯ 菜单开关 */
+  el.querySelectorAll("[data-settings]").forEach(btn =>
+    btn.addEventListener("click", e => {
+      e.stopPropagation();
+      const tid = btn.dataset.settings;
+      el.dataset.openMenuTaskId = el.dataset.openMenuTaskId === tid ? "" : tid;
+      renderTodayTasks();
+    })
+  );
+
+  /* 顺延模式切换（自定义日期显隐） */
+  el.querySelectorAll("[data-defer-mode]").forEach(sel =>
+    sel.addEventListener("change", () => {
+      const customInput = el.querySelector(`[data-defer-date="${sel.dataset.deferMode}"]`);
+      if(customInput) customInput.style.display = sel.value === "custom" ? "inline-flex" : "none";
+    })
+  );
+
+  /* 顺延确认 */
+  el.querySelectorAll("[data-defer-apply]").forEach(btn =>
+    btn.addEventListener("click", e => {
+      e.stopPropagation();
+      const tid = btn.dataset.deferApply;
+      const modeEl = el.querySelector(`[data-defer-mode="${tid}"]`);
+      const customDateEl = el.querySelector(`[data-defer-date="${tid}"]`);
+      if(!modeEl) return;
+      let targetDate = shiftDateKey(today, 1);
+      if(modeEl.value === "dayAfter") targetDate = shiftDateKey(today, 2);
+      if(modeEl.value === "custom")   targetDate = customDateEl?.value || "";
+      if(!parseDateKey(targetDate)) return;
+      const ts = getTasks();
+      const t  = ts.find(x => x.id === tid);
+      if(!t || t.done) return;
+      t.workingDate    = targetDate;
+      t.date           = targetDate;
+      t.rolloverCount  = Number(t.rolloverCount || 0) + 1;
+      t.rolloverMode   = "manual";
+      saveTasks(ts);
+      if(window.syncTask) syncTask(t);
+      el.dataset.openMenuTaskId = "";
+      refreshLearningWidgets();
+    })
+  );
+
+  /* 补卡确认 */
+  el.querySelectorAll("[data-backfill]").forEach(btn =>
+    btn.addEventListener("click", e => {
+      e.stopPropagation();
+      const tid = btn.dataset.backfill;
+      const input = el.querySelector(`[data-backfill-date="${tid}"]`);
+      const targetDate = input?.value || today;
+      if(!parseDateKey(targetDate)) return;
+      const ts = getTasks();
+      const t  = ts.find(x => x.id === tid);
+      if(!t) return;
+      const prevCompletedDate = getCompletedDateKey(t);
+      t.done        = true;
+      t.completedAt = buildCompletedAtByDateKey(targetDate);
+      saveTasks(ts);
+      const nowCompletedDate = getCompletedDateKey(t);
+      if(prevCompletedDate) syncStudyLog(prevCompletedDate);
+      if(nowCompletedDate)  syncStudyLog(nowCompletedDate);
+      if(window.syncTask) syncTask(t);
+      if(prevCompletedDate) syncStudyLogCloud(prevCompletedDate);
+      if(nowCompletedDate)  syncStudyLogCloud(nowCompletedDate);
+      el.dataset.openMenuTaskId = "";
       refreshLearningWidgets();
     })
   );
@@ -1228,27 +1316,49 @@ function buildTaskboardWeek() {
                 ${!dayTasks.length ? `<span style="font-size:11px;color:var(--text-dim)">无任务</span>` : ""}
               </span>
             </div>
-            ${dayTasks.length ? `
-              <div style="padding:0 12px 9px;display:flex;flex-direction:column;gap:0">
-                ${[...pending, ...done].map(t => {
-                  const rolloverBadge = t.rolloverCount > 0
-                    ? `<span class="week-rollover-badge" title="顺延 ${t.rolloverCount} 次">↩${t.rolloverCount}</span>`
-                    : "";
-                  return `
-                  <div class="week-task-row" draggable="true" data-drag-task="${esc(t.id)}"
-                       style="display:flex;align-items:center;gap:8px;padding:5px 0;
-                              border-top:1px solid var(--border-light)">
-                    <span class="week-drag-handle" title="拖拽移到其他天">⠿</span>
-                    <button class="week-task-cb ${t.done?"week-task-cb-done":""}" data-week-cb="${esc(t.id)}"
-                            aria-label="切换完成状态" title="${t.done ? "取消完成" : "标记完成"}">
-                      ${t.done ? "✓" : "○"}
-                    </button>
-                    <span style="font-size:12px;flex:1;color:${t.done ? "var(--text-dim)" : "var(--text-main)"};
-                                 text-decoration:${t.done ? "line-through" : "none"}">${esc(t.title)}</span>
-                    ${rolloverBadge}
-                    <span class="task-tag" data-t="${esc(t.type)}" style="pointer-events:none">${esc(t.type)}</span>
-                  </div>`}).join("")}
-              </div>` : `<div class="week-drop-hint">拖拽任务到这里</div>`}
+            ${(() => {
+                // 幽灵条目：原计划在这天但已顺延走的未完成任务
+                const ghosts = tasks.filter(t =>
+                  !t.done &&
+                  getTaskPlannedDate(t) === dayKey &&
+                  getTaskWorkingDate(t) !== dayKey
+                );
+                const ghostHtml = ghosts.map(t => `
+                  <div class="week-ghost-row">
+                    <span class="week-ghost-icon">⊘</span>
+                    <span class="week-ghost-title">${esc(t.title)}</span>
+                    <span class="week-ghost-badge">↩ 已顺延至 ${formatDateCN(getTaskWorkingDate(t))}</span>
+                    <span class="task-tag" data-t="${esc(t.type)}" style="pointer-events:none;opacity:0.5">${esc(t.type)}</span>
+                  </div>`).join("");
+
+                const taskRows = dayTasks.length
+                  ? `<div style="padding:0 12px 9px;display:flex;flex-direction:column;gap:0">
+                      ${[...pending, ...done].map(t => {
+                        const rolloverBadge = t.rolloverCount > 0
+                          ? `<span class="week-rollover-badge" title="顺延 ${t.rolloverCount} 次">↩${t.rolloverCount}</span>`
+                          : "";
+                        return `
+                        <div class="week-task-row" draggable="true" data-drag-task="${esc(t.id)}"
+                             style="display:flex;align-items:center;gap:8px;padding:5px 0;
+                                    border-top:1px solid var(--border-light)">
+                          <span class="week-drag-handle" title="拖拽移到其他天">⠿</span>
+                          <button class="week-task-cb ${t.done?"week-task-cb-done":""}" data-week-cb="${esc(t.id)}"
+                                  aria-label="切换完成状态" title="${t.done?"取消完成":"标记完成"}">
+                            ${t.done?"✓":"○"}
+                          </button>
+                          <span style="font-size:12px;flex:1;color:${t.done?"var(--text-dim)":"var(--text-main)"};
+                                       text-decoration:${t.done?"line-through":"none"}">${esc(t.title)}</span>
+                          ${rolloverBadge}
+                          <span class="task-tag" data-t="${esc(t.type)}" style="pointer-events:none">${esc(t.type)}</span>
+                        </div>`}).join("")}
+                      ${ghostHtml ? `<div class="week-ghost-section">${ghostHtml}</div>` : ""}
+                    </div>`
+                  : ghostHtml
+                    ? `<div style="padding:0 12px 9px"><div class="week-ghost-section">${ghostHtml}</div></div>`
+                    : `<div class="week-drop-hint">拖拽任务到这里</div>`;
+
+                return taskRows;
+              })()}
           </div>`;
       }).join("")}
     </div>`;

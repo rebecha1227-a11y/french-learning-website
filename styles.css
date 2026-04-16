@@ -137,6 +137,12 @@ ul,ol{margin:0;padding-left:18px}
 .week-task-cb-done{background:var(--accent-teal);border-color:var(--accent-teal);color:white}
 .week-rollover-badge{font-size:10px;padding:1px 4px;background:rgba(184,131,46,0.15);border:1px solid var(--accent-gold);border-radius:2px;color:var(--accent-gold);white-space:nowrap}
 .week-drop-hint{font-size:11px;color:var(--text-dim);padding:6px 12px 8px;font-style:italic}
+/* 本周视图幽灵条目 */
+.week-ghost-section{border-top:1px dashed var(--border-light);margin-top:2px;padding-top:2px}
+.week-ghost-row{display:flex;align-items:center;gap:7px;padding:4px 0;opacity:0.55}
+.week-ghost-icon{font-size:13px;color:var(--accent-rose);flex-shrink:0}
+.week-ghost-title{font-size:12px;color:var(--text-dim);flex:1;text-decoration:line-through}
+.week-ghost-badge{font-size:10px;padding:1px 5px;background:rgba(168,88,88,0.1);border:1px solid var(--accent-rose);border-radius:2px;color:var(--accent-rose);white-space:nowrap;border-style:dashed}
 
 /* Today Tasks Card */
 .today-card{padding:15px}
