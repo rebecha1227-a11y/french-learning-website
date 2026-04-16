@@ -95,13 +95,13 @@ function getRolloverSettings(){
   try{
     const raw = JSON.parse(localStorage.getItem(ROLLOVER_SETTINGS_KEY) || "{}");
     return {
-      enabled: !!raw.enabled,
+      enabled: raw.enabled !== false,   // 默认开启
       notify: raw.notify !== false,
       lastRunDate: raw.lastRunDate || "",
       lastRunMoved: Number(raw.lastRunMoved || 0)
     };
   }catch{
-    return { enabled: false, notify: true, lastRunDate: "", lastRunMoved: 0 };
+    return { enabled: true, notify: true, lastRunDate: "", lastRunMoved: 0 };
   }
 }
 function saveRolloverSettings(s){
@@ -609,6 +609,12 @@ function computeUnitProgress(unitId, bi, ui){
 
 function getSelectedUnit(){ return getAllUnits().find(u => u.id === selectedUnitId) || getAllUnits()[0] }
 
+function formatDateCN(dateStr){
+  const p = parseDateKey(dateStr);
+  if(!p) return dateStr || "";
+  return `${p.month}月${p.day}日`;
+}
+
 function getCountdownDays(){
   const examDate = getExamDate();
   const t = parseDateKey(todayStr());
@@ -624,9 +630,9 @@ function getCountdownDays(){
 const NAV_ITEMS = [
   { id:"dashboard",     label:"今日学习",  icon:"◉", desc:"任务、进度、今日计划" },
   { id:"curriculum",    label:"课程主线",  icon:"✦", desc:"教材单元、讲义、练习" },
-  { id:"question-bank", label:"题库中心",  icon:"◎", desc:"真题、相似题、筛选练习" },
+  { id:"question-bank", label:"题库中心",  icon:"◎", desc:"真题、相似题、筛选练习", wip:true },
   { id:"mistakes",      label:"错题复盘",  icon:"※", desc:"记录错题、错因分析、二刷" },
-  { id:"youtube",       label:"视频补充",  icon:"▶", desc:"YouTube 解析与扩展学习" },
+  { id:"youtube",       label:"视频补充",  icon:"▶", desc:"YouTube 解析与扩展学习", wip:true },
 ];
 
 /* ── PAGE ROUTING ── */
@@ -690,10 +696,15 @@ function renderTopbar(){
 
   NAV_ITEMS.forEach(item => {
     const btn = document.createElement("button");
-    btn.className = "tnav-btn";
+    btn.className = "tnav-btn" + (item.wip ? " tnav-wip" : "");
     btn.dataset.page = item.id;
-    btn.innerHTML = `<span class="tnav-icon">${item.icon}</span>${item.label}`;
-    btn.onclick = () => showPage(item.id);
+    btn.innerHTML = `<span class="tnav-icon">${item.icon}</span>${item.label}${item.wip ? `<span class="tnav-wip-badge">建设中</span>` : ""}`;
+    if(item.wip){
+      btn.title = "功能建设中，敬请期待";
+      btn.onclick = () => showPage(item.id);
+    } else {
+      btn.onclick = () => showPage(item.id);
+    }
     nav.appendChild(btn);
   });
 }
@@ -853,9 +864,12 @@ function renderFeatureNav(){
   const g = document.getElementById("feature-nav-grid");
   g.innerHTML = NAV_ITEMS.map(item => {
     const c = ICON_MAP[item.id] || { icon:"•", color:"var(--text-sub)" };
-    return `<button class="feature-nav-btn" data-page="${esc(item.id)}">
-      <span class="feature-nav-icon" style="color:${c.color}">${c.icon}</span>
-      <span class="feature-nav-label" style="color:${c.color}">${esc(item.label)}</span>
+    const wipAttr = item.wip ? `data-wip="true" title="功能建设中，敬请期待"` : "";
+    const wipBadge = item.wip ? `<span class="feature-nav-wip-badge">建设中</span>` : "";
+    return `<button class="feature-nav-btn${item.wip ? " feature-nav-wip" : ""}" data-page="${esc(item.id)}" ${wipAttr}>
+      ${wipBadge}
+      <span class="feature-nav-icon" style="color:${item.wip ? "var(--text-dim)" : c.color}">${c.icon}</span>
+      <span class="feature-nav-label" style="color:${item.wip ? "var(--text-dim)" : c.color}">${esc(item.label)}</span>
       <span class="feature-nav-desc">${esc(item.desc)}</span>
     </button>`;
   }).join("");
@@ -916,7 +930,7 @@ function makeTagEditable(tagEl, task){
   });
 }
 
-/* ── TODAY TASKS (home page widget) ── */
+/* ── TODAY TASKS (home page widget — 只读+勾选，管理操作去内页) ── */
 function renderTodayTasks(){
   const el       = document.getElementById("today-tasks-card");
   if(!el) return;
@@ -925,7 +939,6 @@ function renderTodayTasks(){
   const log      = getStudyLog();
   const weekDone = getLast7DaysDone(log);
   const planRate = getPlanningExecutionRate(tasks);
-  const viewSettings = getTaskViewSettings();
 
   const dayTasksRaw = tasks.filter(t => {
     if(!t.done) return getTaskWorkingDate(t) === today;
@@ -937,36 +950,23 @@ function renderTodayTasks(){
     if(!!a.done === !!b.done) return 0;
     return a.done ? 1 : -1;
   });
-  const visibleDayTasks = viewSettings.showCompleted ? dayTasks : dayTasks.filter(t => !t.done);
   const doneCount = dayTasksRaw.filter(t => t.done).length;
-  const openMenuTaskId = el.dataset.openMenuTaskId || "";
+
+  const noticeBanner = autoRolloverNotice
+    ? `<div class="rollover-notice">↩ ${esc(autoRolloverNotice)}</div>`
+    : "";
 
   el.innerHTML = `
     <div class="card-header-row">
       <span class="card-title">📅 今日学习任务</span>
       <span class="streak-badge">🔥 ${computeStreak(log)}</span>
     </div>
-    <div class="date-selector-row" style="margin-top:-4px">
-      <span style="font-size:12px;color:var(--text-dim)">今日日期：${esc(today)}（北京时间）</span>
-      <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-sub);margin-left:auto">
-        <input id="ht-show-completed" type="checkbox" ${viewSettings.showCompleted ? "checked" : ""}/>
-        显示已完成（${doneCount}）
-      </label>
-    </div>
-    <div class="add-task-row" style="margin-top:8px">
-      <input class="add-task-input" id="ht-inp" type="text" placeholder="添加今日任务…"/>
-      <select class="add-task-select" id="ht-sel">
-        <option>讲义</option><option>练习</option><option>复盘</option>
-        <option>真题</option><option>视频</option><option>复习</option>
-      </select>
-      <button class="add-task-btn" id="ht-add">＋</button>
-    </div>
+    ${noticeBanner}
     <div class="task-list" id="ht-list">
-      ${visibleDayTasks.length ? visibleDayTasks.map(t => {
-        const isReview = t.type === "复习" && t.reviewData;
-        const doneDate = getCompletedDateKey(t);
-        const deferDate = shiftDateKey(today, 1);
-        const menuOpen = openMenuTaskId === t.id;
+      ${dayTasks.length ? dayTasks.map(t => {
+        const rolloverInfo = t.rolloverCount > 0
+          ? `<div class="task-rollover-info">↩ 顺延 ${t.rolloverCount} 次 · 原计划 ${formatDateCN(t.plannedDate)}</div>`
+          : "";
         return `
           <div class="task-item ${t.done?"done":""}" data-tid="${esc(t.id)}">
             <button class="task-cb-btn" data-cb="${esc(t.id)}" aria-label="切换完成状态">
@@ -974,36 +974,16 @@ function renderTodayTasks(){
             </button>
             <div class="task-body">
               <div class="task-title">${esc(t.title)}</div>
-              ${isReview ? `<div class="task-review-box">
-                <span class="task-review-q">📝 ${esc(t.reviewData.question?.slice(0,60) || "")}…</span>
-                <span class="task-review-ans">正确答案：${esc(t.reviewData.correctAnswer || "")}</span>
-              </div>` : `<div class="task-detail">${esc(t.detail||t.time||"")}</div>`}
-              ${t.done && doneDate ? `<div class="task-detail">完成日期：${esc(doneDate)}</div>` : ""}
-              ${menuOpen ? `<div class="task-menu">
-                <div class="task-menu-row">
-                  <span class="task-menu-label">补卡完成</span>
-                  <input class="form-input task-menu-date" type="date" data-backfill-date="${esc(t.id)}" value="${esc(doneDate || today)}"/>
-                  <button class="btn-ghost btn-small" data-backfill="${esc(t.id)}">确认</button>
-                </div>
-                <div class="task-menu-row">
-                  <span class="task-menu-label">延期</span>
-                  <select class="add-task-select task-menu-select" data-defer-mode="${esc(t.id)}">
-                    <option value="tomorrow">明天</option>
-                    <option value="dayAfter">后天</option>
-                    <option value="custom">自定义日期</option>
-                  </select>
-                  <input class="form-input task-menu-date" type="date" data-defer-date="${esc(t.id)}" value="${esc(deferDate)}" style="display:none"/>
-                  <button class="btn-ghost btn-small" data-defer-apply="${esc(t.id)}" ${t.done ? "disabled" : ""}>确认</button>
-                </div>
-              </div>` : ""}
+              ${rolloverInfo}
             </div>
             <div class="task-actions">
-              <span class="task-tag" data-t="${esc(t.type)}">${esc(t.type)}</span>
-              <button class="btn-ghost btn-small task-more-btn" data-settings="${esc(t.id)}" aria-label="任务设置">⋯</button>
-              <button class="btn-danger btn-small" data-dt="${esc(t.id)}" aria-label="删除任务">✕</button>
+              <span class="task-tag" data-t="${esc(t.type)}" style="pointer-events:none">${esc(t.type)}</span>
             </div>
           </div>`;
-      }).join("") : `<div class="task-empty">${dayTasksRaw.length && !viewSettings.showCompleted ? "当前仅有已完成任务（已隐藏）" : "今天还没有任务，先添加一个学习目标吧。"}。</div>`}
+      }).join("") : `<div class="task-empty">今天还没有任务，去今日学习页添加吧。</div>`}
+    </div>
+    <div style="margin-top:8px;text-align:right">
+      <button class="btn-ghost btn-small" onclick="showPage('dashboard')" style="font-size:12px">+ 添加任务 · 今日学习 →</button>
     </div>
     <div class="task-summary-row">
       <div class="task-summary-box">
@@ -1021,45 +1001,6 @@ function renderTodayTasks(){
     </div>`;
 
   autoRolloverNotice = "";
-
-  el.querySelectorAll(".task-tag[data-t]").forEach(tagEl => {
-    const tid = tagEl.closest("[data-tid]")?.dataset.tid;
-    const task = dayTasks.find(t => t.id === tid);
-    if(task) makeTagEditable(tagEl, task);
-  });
-
-  document.getElementById("ht-show-completed")?.addEventListener("change", e => {
-    saveTaskViewSettings({ showCompleted: !!e.target.checked });
-    renderTodayTasks();
-  });
-
-  const addFn = () => {
-    const inp = document.getElementById("ht-inp");
-    const sel = document.getElementById("ht-sel");
-    const title = inp.value.trim();
-    if(!title) return;
-    const ts = getTasks();
-    const newTask = {
-      id:"t-"+Date.now(),
-      title,
-      type:sel.value,
-      done:false,
-      detail:"",
-      date: today,
-      plannedDate: today,
-      workingDate: today,
-      completedAt: "",
-      rolloverCount: 0,
-      rolloverMode: ""
-    };
-    ts.push(newTask);
-    saveTasks(ts);
-    if(window.syncTask) syncTask(newTask);
-    inp.value = "";
-    refreshLearningWidgets();
-  };
-  document.getElementById("ht-add")?.addEventListener("click", addFn);
-  document.getElementById("ht-inp")?.addEventListener("keydown", e => { if(e.key==="Enter") addFn(); });
 
   el.querySelectorAll("[data-cb]").forEach(btn =>
     btn.addEventListener("click", e => {
@@ -1082,93 +1023,6 @@ function renderTodayTasks(){
       if(window.syncTask) syncTask(t);
       if(prevCompletedDate) syncStudyLogCloud(prevCompletedDate);
       if(nowCompletedDate) syncStudyLogCloud(nowCompletedDate);
-      refreshLearningWidgets();
-    })
-  );
-
-  el.querySelectorAll("[data-dt]").forEach(btn =>
-    btn.addEventListener("click", e => {
-      e.stopPropagation();
-      const ts = getTasks();
-      const t = ts.find(x => x.id === btn.dataset.dt);
-      if(window.deleteTask) deleteTask(btn.dataset.dt);
-      const completedDate = t ? getCompletedDateKey(t) : "";
-      saveTasks(ts.filter(x => x.id !== btn.dataset.dt));
-      if(completedDate){
-        syncStudyLog(completedDate);
-        syncStudyLogCloud(completedDate);
-      }
-      refreshLearningWidgets();
-    })
-  );
-
-  el.querySelectorAll("[data-settings]").forEach(btn =>
-    btn.addEventListener("click", e => {
-      e.stopPropagation();
-      const tid = btn.dataset.settings;
-      el.dataset.openMenuTaskId = el.dataset.openMenuTaskId === tid ? "" : tid;
-      renderTodayTasks();
-    })
-  );
-
-  el.querySelectorAll("[data-backfill]").forEach(btn =>
-    btn.addEventListener("click", e => {
-      e.stopPropagation();
-      const tid = btn.dataset.backfill;
-      const input = el.querySelector(`[data-backfill-date="${tid}"]`);
-      const targetDate = input?.value || today;
-      if(!parseDateKey(targetDate)) return;
-      const ts = getTasks();
-      const t = ts.find(x => x.id === tid);
-      if(!t) return;
-      const prevCompletedDate = getCompletedDateKey(t);
-      t.done = true;
-      t.completedAt = buildCompletedAtByDateKey(targetDate);
-      saveTasks(ts);
-      const nowCompletedDate = getCompletedDateKey(t);
-      if(prevCompletedDate) syncStudyLog(prevCompletedDate);
-      if(nowCompletedDate) syncStudyLog(nowCompletedDate);
-      if(window.syncTask) syncTask(t);
-      if(prevCompletedDate) syncStudyLogCloud(prevCompletedDate);
-      if(nowCompletedDate) syncStudyLogCloud(nowCompletedDate);
-      el.dataset.openMenuTaskId = "";
-      refreshLearningWidgets();
-    })
-  );
-
-  el.querySelectorAll("[data-defer-mode]").forEach(sel =>
-    sel.addEventListener("change", () => {
-      const tid = sel.dataset.deferMode;
-      const customInput = el.querySelector(`[data-defer-date="${tid}"]`);
-      if(!customInput) return;
-      customInput.style.display = sel.value === "custom" ? "inline-flex" : "none";
-    })
-  );
-
-  el.querySelectorAll("[data-defer-apply]").forEach(btn =>
-    btn.addEventListener("click", e => {
-      e.stopPropagation();
-      const tid = btn.dataset.deferApply;
-      const modeEl = el.querySelector(`[data-defer-mode="${tid}"]`);
-      const customDateEl = el.querySelector(`[data-defer-date="${tid}"]`);
-      if(!modeEl) return;
-      const mode = modeEl.value;
-      let targetDate = shiftDateKey(today, 1);
-      if(mode === "dayAfter") targetDate = shiftDateKey(today, 2);
-      if(mode === "custom") targetDate = customDateEl?.value || "";
-      if(!parseDateKey(targetDate)) return;
-
-      const ts = getTasks();
-      const t = ts.find(x => x.id === tid);
-      if(!t || t.done) return;
-      t.workingDate = targetDate;
-      t.date = targetDate;
-      t.rolloverCount = Number(t.rolloverCount || 0) + 1;
-      t.rolloverMode = "manual";
-      saveTasks(ts);
-      if(window.syncTask) syncTask(t);
-      trackMetric("rollover_manual_single", 1);
-      el.dataset.openMenuTaskId = "";
       refreshLearningWidgets();
     })
   );
@@ -1359,7 +1213,8 @@ function buildTaskboardWeek() {
         const pending = dayTasks.filter(t => !t.done);
         const isToday = dayKey === today;
         return `
-          <div style="background:${isToday ? "var(--bg-inset)" : "var(--bg-panel)"};
+          <div class="week-day-zone" data-drop-day="${esc(dayKey)}"
+               style="background:${isToday ? "var(--bg-inset)" : "var(--bg-panel)"};
                       border:2px solid ${isToday ? "var(--accent-blue)" : "var(--border)"};
                       border-radius:var(--card-r);overflow:hidden">
             <div style="display:flex;align-items:center;gap:10px;padding:9px 12px">
@@ -1375,18 +1230,97 @@ function buildTaskboardWeek() {
             </div>
             ${dayTasks.length ? `
               <div style="padding:0 12px 9px;display:flex;flex-direction:column;gap:0">
-                ${[...done, ...pending].map(t => `
-                  <div style="display:flex;align-items:center;gap:8px;padding:5px 0;
-                               border-top:1px solid var(--border-light)">
-                    <span style="font-size:13px;color:${t.done ? "var(--accent-green)" : "var(--text-dim)"};flex-shrink:0">${t.done ? "✓" : "○"}</span>
+                ${[...pending, ...done].map(t => {
+                  const rolloverBadge = t.rolloverCount > 0
+                    ? `<span class="week-rollover-badge" title="顺延 ${t.rolloverCount} 次">↩${t.rolloverCount}</span>`
+                    : "";
+                  return `
+                  <div class="week-task-row" draggable="true" data-drag-task="${esc(t.id)}"
+                       style="display:flex;align-items:center;gap:8px;padding:5px 0;
+                              border-top:1px solid var(--border-light)">
+                    <span class="week-drag-handle" title="拖拽移到其他天">⠿</span>
+                    <button class="week-task-cb ${t.done?"week-task-cb-done":""}" data-week-cb="${esc(t.id)}"
+                            aria-label="切换完成状态" title="${t.done ? "取消完成" : "标记完成"}">
+                      ${t.done ? "✓" : "○"}
+                    </button>
                     <span style="font-size:12px;flex:1;color:${t.done ? "var(--text-dim)" : "var(--text-main)"};
                                  text-decoration:${t.done ? "line-through" : "none"}">${esc(t.title)}</span>
+                    ${rolloverBadge}
                     <span class="task-tag" data-t="${esc(t.type)}" style="pointer-events:none">${esc(t.type)}</span>
-                  </div>`).join("")}
-              </div>` : ""}
+                  </div>`}).join("")}
+              </div>` : `<div class="week-drop-hint">拖拽任务到这里</div>`}
           </div>`;
       }).join("")}
     </div>`;
+}
+
+function bindWeekEvents(bodyEl) {
+  if(!bodyEl) return;
+  let draggedTaskId = null;
+
+  /* 勾选完成/取消 */
+  bodyEl.querySelectorAll("[data-week-cb]").forEach(btn => {
+    btn.addEventListener("click", e => {
+      e.stopPropagation();
+      const ts = getTasks();
+      const t = ts.find(x => x.id === btn.dataset.weekCb);
+      if(!t) return;
+      const prev = getCompletedDateKey(t);
+      t.done = !t.done;
+      t.completedAt = t.done ? buildCompletedAtByDateKey(getTaskWorkingDate(t)) : "";
+      saveTasks(ts);
+      const now = getCompletedDateKey(t);
+      if(prev) syncStudyLog(prev);
+      if(now)  syncStudyLog(now);
+      if(window.syncTask) syncTask(t);
+      if(prev) syncStudyLogCloud(prev);
+      if(now)  syncStudyLogCloud(now);
+      bodyEl.innerHTML = buildTaskboardWeek();
+      bindWeekEvents(bodyEl);
+      renderTodayTasks(); renderHeatmap(); renderProfileCard();
+    });
+  });
+
+  /* 拖拽：开始 */
+  bodyEl.querySelectorAll("[data-drag-task]").forEach(row => {
+    row.addEventListener("dragstart", e => {
+      draggedTaskId = row.dataset.dragTask;
+      row.classList.add("week-dragging");
+      e.dataTransfer.effectAllowed = "move";
+    });
+    row.addEventListener("dragend", () => {
+      row.classList.remove("week-dragging");
+    });
+  });
+
+  /* 拖拽：放入目标天 */
+  bodyEl.querySelectorAll("[data-drop-day]").forEach(zone => {
+    zone.addEventListener("dragover", e => {
+      e.preventDefault();
+      zone.classList.add("week-drag-over");
+    });
+    zone.addEventListener("dragleave", e => {
+      if(!zone.contains(e.relatedTarget)) zone.classList.remove("week-drag-over");
+    });
+    zone.addEventListener("drop", e => {
+      e.preventDefault();
+      zone.classList.remove("week-drag-over");
+      if(!draggedTaskId) return;
+      const targetDay = zone.dataset.dropDay;
+      const ts = getTasks();
+      const t = ts.find(x => x.id === draggedTaskId);
+      if(!t) return;
+      if(getTaskWorkingDate(t) === targetDay){ draggedTaskId = null; return; }
+      t.workingDate = targetDay;
+      t.date = targetDay;
+      saveTasks(ts);
+      if(window.syncTask) syncTask(t);
+      draggedTaskId = null;
+      bodyEl.innerHTML = buildTaskboardWeek();
+      bindWeekEvents(bodyEl);
+      renderTodayTasks(); renderHeatmap(); renderProfileCard();
+    });
+  });
 }
 
 function buildTaskboardMonth(expandedDate) {
@@ -1732,6 +1666,7 @@ function bindDashboardEvents(el){
       bindTodayEvents();
     } else if(dashActiveTab === "week") {
       bodyEl.innerHTML = buildTaskboardWeek();
+      bindWeekEvents(bodyEl);
     } else if(dashActiveTab === "month") {
       bodyEl.innerHTML = buildTaskboardMonth(dashExpandedDate);
       bindMonthEvents();
@@ -2013,11 +1948,7 @@ function bindUnitDetailEvents(el){
           });
           saveMistakes(ml);
           if(window.syncMistake) syncMistake(ml[ml.length-1]);
-          const n = document.createElement("span");
-          n.textContent = " → 已加入错题池";
-          n.style.cssText = "font-size:11px;color:var(--accent-rose);margin-left:6px";
-          resEl.after(n);
-          setTimeout(()=>n.remove(), 3000);
+          resEl.innerHTML = `✗ 错误（参考：${esc(correct)}）<span class="mistake-auto-added">✓ 已自动加入错题库</span>`;
         }
       }
     })
@@ -2059,6 +1990,13 @@ window.exportUnit = function(tab){
 ══════════════════════════════════ */
 function buildQBank(){
   return `
+    <div class="wip-banner">
+      <span class="wip-banner-icon">🚧</span>
+      <div>
+        <strong>功能建设中</strong>
+        <p>题库模块正在搭建，计划收录 TCF Canada 听力、阅读、口语、写作真题与相似题，支持按难度和知识点筛选练习。</p>
+      </div>
+    </div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:9px">
       ${questionBank.stats.map(s=>`
         <div class="dash-metric-box">
@@ -2154,43 +2092,44 @@ function buildMistakes(){
 
   return `
     <div class="card card-pad">
-      <div class="card-hdr"><span class="section-kicker">Record</span><h4>新增错题记录</h4></div>
-      <div class="mistake-form">
-        <div class="form-row">
-          <div><label class="form-label">日期</label><input class="form-input" id="mf-date" type="date" value="${todayStr()}"/></div>
-          <div><label class="form-label">来源</label>
-            <select class="form-select" id="mf-src">
-              <option value="">选择来源</option>
-              <optgroup label="单元">${UNIT_OPTS}</optgroup>
-              <option value="tcf-real">TCF 真题</option>
-              <option value="similar">相似题</option>
-            </select>
-          </div>
-        </div>
-        <div><label class="form-label">题目内容</label><input class="form-input" id="mf-q" type="text" placeholder="输入题目内容…"/></div>
-        <div class="form-row">
-          <div><label class="form-label">我的错误答案</label><input class="form-input" id="mf-my" type="text"/></div>
-          <div><label class="form-label">正确答案</label><input class="form-input" id="mf-cor" type="text"/></div>
-        </div>
-        <div><label class="form-label">错误原因 & 原答题思路</label><textarea class="form-textarea" id="mf-reason" placeholder="为什么错了？当时怎么想的？"></textarea></div>
-        <div><label class="form-label">反思</label><textarea class="form-textarea" id="mf-ref" placeholder="下次遇到同类题应该怎么做？"></textarea></div>
-        <div><label class="form-label">标签</label>
-          <div class="tag-filter-row" id="mf-tags">
-            ${allTags.map(t=>`<span class="tag-pill" style="border-color:var(--accent-purple);color:var(--accent-purple)" data-tag="${esc(t)}">${esc(t)}</span>`).join("")}
-          </div>
-        </div>
-        <div style="display:flex;gap:9px">
-          <button class="btn-primary" id="mf-submit">保存错题</button>
-          <button class="btn-ghost" id="mf-clear">清空</button>
-        </div>
-      </div>
-    </div>
-    <div class="card card-pad">
       <div class="card-hdr" style="flex-wrap:wrap;gap:10px">
         <div><span class="section-kicker">Pool</span><h4>错题池（未掌握 ${activeRows} 条 / 已掌握 ${masteredRows} 条）</h4></div>
         <div style="display:flex;gap:8px">
+          <button class="btn-ghost btn-small" id="mf-toggle">＋ 手动记录错题</button>
           <button class="btn-ghost btn-small" id="exp-mis">↓ 导出CSV</button>
           <button class="btn-danger btn-small" id="clr-all">清空全部</button>
+        </div>
+      </div>
+      <div id="mf-card" style="display:none;margin-bottom:14px;padding:14px;background:var(--bg-inset);border:1px solid var(--border);border-radius:var(--card-r)">
+        <p style="font-size:12px;color:var(--text-sub);margin:0 0 10px">练习题答错时会自动入库；以下表单用于手动补录 TCF 真题、听力等场景的错误。</p>
+        <div class="mistake-form">
+          <div class="form-row">
+            <div><label class="form-label">日期</label><input class="form-input" id="mf-date" type="date" value="${todayStr()}"/></div>
+            <div><label class="form-label">来源</label>
+              <select class="form-select" id="mf-src">
+                <option value="">选择来源</option>
+                <optgroup label="单元">${UNIT_OPTS}</optgroup>
+                <option value="tcf-real">TCF 真题</option>
+                <option value="similar">相似题</option>
+              </select>
+            </div>
+          </div>
+          <div><label class="form-label">题目内容</label><input class="form-input" id="mf-q" type="text" placeholder="输入题目内容…"/></div>
+          <div class="form-row">
+            <div><label class="form-label">我的错误答案</label><input class="form-input" id="mf-my" type="text"/></div>
+            <div><label class="form-label">正确答案</label><input class="form-input" id="mf-cor" type="text"/></div>
+          </div>
+          <div><label class="form-label">错误原因 & 原答题思路</label><textarea class="form-textarea" id="mf-reason" placeholder="为什么错了？当时怎么想的？"></textarea></div>
+          <div><label class="form-label">反思</label><textarea class="form-textarea" id="mf-ref" placeholder="下次遇到同类题应该怎么做？"></textarea></div>
+          <div><label class="form-label">标签</label>
+            <div class="tag-filter-row" id="mf-tags">
+              ${allTags.map(t=>`<span class="tag-pill" style="border-color:var(--accent-purple);color:var(--accent-purple)" data-tag="${esc(t)}">${esc(t)}</span>`).join("")}
+            </div>
+          </div>
+          <div style="display:flex;gap:9px">
+            <button class="btn-primary" id="mf-submit">保存错题</button>
+            <button class="btn-ghost" id="mf-clear">清空</button>
+          </div>
         </div>
       </div>
       <div class="tag-filter-row" id="mis-status-filter">
@@ -2227,6 +2166,16 @@ function bindMistakeEvents(el){
     renderedPages.delete("mistakes");
     renderInnerPage("mistakes", document.getElementById("page-mistakes"));
   };
+
+  /* 手动录入表单展开/折叠 */
+  el.querySelector("#mf-toggle")?.addEventListener("click", () => {
+    const card = el.querySelector("#mf-card");
+    const btn  = el.querySelector("#mf-toggle");
+    const open = card.style.display !== "none";
+    card.style.display = open ? "none" : "block";
+    btn.textContent = open ? "＋ 手动记录错题" : "▲ 收起";
+  });
+
   let selTags = [];
   el.querySelectorAll("#mf-tags .tag-pill").forEach(p =>
     p.addEventListener("click", () => {
@@ -2478,6 +2427,13 @@ function bindMistakeEvents(el){
 ══════════════════════════════════ */
 function buildYoutube(){
   return `
+    <div class="wip-banner">
+      <span class="wip-banner-icon">🚧</span>
+      <div>
+        <strong>功能建设中</strong>
+        <p>视频补充模块正在开发，计划支持粘贴 YouTube 链接后自动生成学习笔记、讲义要点和配套练习题。</p>
+      </div>
+    </div>
     <div class="youtube-cards-grid">
       ${youtube.cards.map(c=>`
         <div class="info-card"><h5>${esc(c.title)}</h5>
@@ -2495,11 +2451,6 @@ function buildYoutube(){
             </div>`).join("")}
         </div>
       </div>
-      <div class="input-row">
-        <input class="text-input" type="text" placeholder="粘贴 YouTube 链接…"/>
-        <button class="btn-primary muted" disabled>解析</button>
-      </div>
-      <p class="helper-text">功能开发中，后续自动生成总结、讲义和练习。</p>
     </div>`;
 }
 
