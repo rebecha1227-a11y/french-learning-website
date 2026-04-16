@@ -6,13 +6,12 @@
 
 ## 如何打开
 
-```
-# 方式一：直接双击（推荐）
-双击项目根目录的 index.html
+**在线访问（推荐）：** https://rebecha1227-a11y.github.io/french-learning-website/
 
-# 方式二：本地服务器（避免 file:// 跨域限制）
-npx serve .
-# 然后访问 http://localhost:3000
+```
+# 本地运行（开发用）
+npx serve -l 3456 .
+# 然后访问 http://localhost:3456
 ```
 
 ---
@@ -301,7 +300,7 @@ npx serve .
 | 数据存储 | `localStorage`（本地） + Supabase（云端，登录后） |
 | 认证 | Supabase Auth（邮箱密码 + 忘记密码） |
 | 字体 | VT323（像素数字）+ Noto Sans SC（正文） |
-| 部署 | 任意静态托管（直接双击 index.html 即可） |
+| 部署 | GitHub Pages（https://rebecha1227-a11y.github.io/french-learning-website/） |
 
 ---
 
