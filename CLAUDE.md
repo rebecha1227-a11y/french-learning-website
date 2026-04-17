@@ -1,5 +1,7 @@
 # Français Quest · 项目工作日志
 
+> 通用偏好见全局 `~/CLAUDE.md`。本文件只放项目专属信息。
+
 ## 项目简介
 TCF Canada 备考个人学习管理工具。纯 HTML + CSS + Vanilla JS，Supabase 云同步可选。
 运行方式：双击 `index.html` 或 `npx serve .`（端口 3456）
@@ -10,13 +12,11 @@ TCF Canada 备考个人学习管理工具。纯 HTML + CSS + Vanilla JS，Supaba
 - `supabase.js` — 认证 + 云同步（~1450 行）
 - `styles.css` — 样式（~660 行）
 
----
-
-## 用户偏好
-- 每次改动前先讲方案，用户确认后再动代码
-- 改完一个问题马上验证截图，确认无误再推送
-- 直接推送到 main 分支（不用 PR）
-- 提交信息用中文，简明扼要
+## 本项目工作流
+- **复杂/不确定的改动** → 开新分身 + 新分支 → 满意后合并 main
+- **简单小改动** → 主 worktree 的 main 上直接改、直接推
+- 改完 UX 问题先截图验证再推送
+- commit message 用中文，简明扼要
 
 ---
 
