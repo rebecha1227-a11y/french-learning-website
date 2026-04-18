@@ -629,7 +629,7 @@ function getCountdownDays(){
 
 /* ── NAV ── */
 const NAV_ITEMS = [
-  { id:"dashboard",     label:"今日学习",  icon:"◉", desc:"任务、进度、今日计划" },
+  { id:"dashboard",     label:"任务中心",  icon:"◉", desc:"任务看板、进度热力图、考试倒计时" },
   { id:"curriculum",    label:"课程主线",  icon:"✦", desc:"教材单元、讲义、练习" },
   { id:"question-bank", label:"题库中心",  icon:"◎", desc:"真题、相似题、筛选练习", wip:true },
   { id:"mistakes",      label:"错题复盘",  icon:"※", desc:"记录错题、错因分析、二刷" },
@@ -747,13 +747,20 @@ function renderProfileCard(){
   const username  = compactDisplayName(getDisplayName());
   const user      = getCurrentUserObj();
   const loggedIn  = !!user;
+  const rawName   = getDisplayName();
+  const words     = rawName.trim().split(/\s+/);
+  const initials  = (words.length >= 2 && /^[A-Za-z]/.test(words[0]))
+    ? (words[0][0] + words[1][0]).toUpperCase()
+    : rawName.trim()[0] || "?";
+  const avatarColors = ["#3f62a0","#5a8a4a","#a05a30","#7a5a9a","#2a8a7a"];
+  const avatarBg = avatarColors[rawName.charCodeAt(0) % avatarColors.length] || avatarColors[0];
   const totalDone = tasks.filter(t => t.done).length;
   const continuity = getLearningConsistency(log);
   const planRate = getPlanningExecutionRate(tasks);
 
   card.innerHTML = `
     <div class="profile-head">
-      <div class="profile-avatar">${loggedIn ? "已登录" : "访客"}</div>
+      <div class="profile-avatar" style="background:${avatarBg};border-color:${avatarBg};color:#fff;font-family:'VT323',monospace;font-size:${initials.length>1?'22px':'28px'}">${initials}</div>
       <div class="profile-identity">
         <span class="profile-name vt">${esc(username)}</span>
         <div class="profile-meta-row">
@@ -1304,8 +1311,10 @@ function getTaskboardDateKey(task){
   return getTaskWorkingDate(task);
 }
 
-function buildTaskboardToday(activeDate) {
+function buildTaskboardToday(activeDate, openMenuTaskId = "") {
   const date = activeDate || todayStr();
+  const today = todayStr();
+  const tomorrowKey = shiftDateKey(today, 1);
   const tasks = getTasks();
   const dayTasks = tasks.filter(t => getTaskboardDateKey(t) === date)
     .sort((a,b) => { if(!!a.done === !!b.done) return 0; return a.done ? 1 : -1; });
@@ -1325,16 +1334,49 @@ function buildTaskboardToday(activeDate) {
       <button class="add-task-btn" id="dt-add">＋</button>
     </div>
     <div class="stack" id="dt-list">
-      ${dayTasks.length ? dayTasks.map(t => `
+      ${dayTasks.length ? dayTasks.map(t => {
+        const menuOpen = openMenuTaskId === t.id;
+        const doneDate = t.completedAt ? t.completedAt.slice(0,10) : date;
+        return `
         <div class="task-item ${t.done ? "done" : ""}" data-tid="${esc(t.id)}">
           <div class="task-cb">${t.done ? "✓" : ""}</div>
           <div class="task-body">
             <div class="task-title">${esc(t.title)}</div>
             ${t.detail ? `<div class="task-detail">${esc(t.detail)}</div>` : ""}
           </div>
-          <span class="task-tag" data-t="${esc(t.type)}">${esc(t.type)}</span>
-          <button class="btn-danger btn-small" data-dt="${esc(t.id)}" style="margin-left:4px;flex-shrink:0">✕</button>
-        </div>`).join("")
+          <div class="task-actions">
+            <span class="task-tag" data-t="${esc(t.type)}">${esc(t.type)}</span>
+            <button class="btn-ghost btn-small task-more-btn" data-dt-settings="${esc(t.id)}" aria-label="更多操作">⋯</button>
+            ${menuOpen ? `<div class="task-popup">
+              <div class="task-popup-row">
+                <span class="task-popup-label">↩ 顺延</span>
+                <div class="task-popup-btns">
+                  <button class="btn-ghost btn-small" data-dt-defer-quick="${esc(t.id)}" data-d="1"${t.done?" disabled":""}>明天</button>
+                  <button class="btn-ghost btn-small" data-dt-defer-quick="${esc(t.id)}" data-d="2"${t.done?" disabled":""}>后天</button>
+                  <button class="btn-ghost btn-small" data-dt-defer-show="${esc(t.id)}"${t.done?" disabled":""}>自定义</button>
+                </div>
+              </div>
+              <div class="task-popup-date-row" id="dt-defer-row-${esc(t.id)}" style="display:none">
+                <input type="date" class="form-input task-popup-date-input" data-dt-defer-custom="${esc(t.id)}" value="${esc(tomorrowKey)}"/>
+                <button class="btn-ghost btn-small" data-dt-defer-apply="${esc(t.id)}"${t.done?" disabled":""}>确认</button>
+              </div>
+              <div class="task-popup-row task-popup-sep">
+                <span class="task-popup-label">📅 补卡</span>
+                <div class="task-popup-btns">
+                  <input type="date" class="form-input task-popup-date-input" data-dt-backfill-date="${esc(t.id)}" value="${esc(doneDate)}"/>
+                  <button class="btn-ghost btn-small" data-dt-backfill="${esc(t.id)}">确认</button>
+                </div>
+              </div>
+              <div class="task-popup-row task-popup-sep">
+                <span class="task-popup-label">🗑 删除</span>
+                <div class="task-popup-btns">
+                  <button class="btn-danger btn-small" data-dt-del="${esc(t.id)}">删除此任务</button>
+                </div>
+              </div>
+            </div>` : ""}
+          </div>
+        </div>`;
+      }).join("")
       : `<div class="task-empty">这天还没有任务，先添加一个学习目标吧。</div>`}
     </div>`;
 }
@@ -1821,10 +1863,11 @@ function bindDashboardEvents(el){
   /* ── Taskboard tabs ── */
   const tabsEl  = el.querySelector("#taskboard-tabs");
   const bodyEl  = el.querySelector("#taskboard-body");
+  let dashOpenMenuTaskId = "";
 
   const renderView = () => {
     if(dashActiveTab === "today") {
-      bodyEl.innerHTML = buildTaskboardToday(dashActiveDate);
+      bodyEl.innerHTML = buildTaskboardToday(dashActiveDate, dashOpenMenuTaskId);
       bindTodayEvents();
     } else if(dashActiveTab === "week") {
       bodyEl.innerHTML = buildTaskboardWeek();
@@ -1851,10 +1894,20 @@ function bindDashboardEvents(el){
 
   /* ── Today view events ── */
   function bindTodayEvents() {
+    const rerender = () => {
+      bodyEl.innerHTML = buildTaskboardToday(dashActiveDate, dashOpenMenuTaskId);
+      bindTodayEvents();
+    };
+    const rerenderFull = () => {
+      rerender();
+      refreshDashboardHeatmap(el);
+      renderTodayTasks(); renderHeatmap(); renderProfileCard(); renderCourseProgress();
+    };
+
     bodyEl.querySelector("#dt-date")?.addEventListener("change", e => {
       dashActiveDate = e.target.value;
-      bodyEl.innerHTML = buildTaskboardToday(dashActiveDate);
-      bindTodayEvents();
+      dashOpenMenuTaskId = "";
+      rerender();
     });
 
     const addFn = () => {
@@ -1873,17 +1926,16 @@ function bindDashboardEvents(el){
       saveTasks(ts);
       if(window.syncTask) syncTask(newTask);
       inp.value = "";
-      bodyEl.innerHTML = buildTaskboardToday(dashActiveDate);
-      bindTodayEvents();
-      refreshDashboardHeatmap(el);
-      renderTodayTasks(); renderHeatmap(); renderProfileCard(); renderCourseProgress();
+      dashOpenMenuTaskId = "";
+      rerenderFull();
     };
     bodyEl.querySelector("#dt-add")?.addEventListener("click", addFn);
     bodyEl.querySelector("#dt-inp")?.addEventListener("keydown", e => { if(e.key==="Enter") addFn(); });
 
+    /* 点击任务行切换完成 */
     bodyEl.querySelectorAll(".task-item[data-tid]").forEach(item =>
       item.addEventListener("click", ev => {
-        if(ev.target.closest("[data-dt]") || ev.target.tagName === "SELECT") return;
+        if(ev.target.closest("[data-dt-settings]") || ev.target.closest(".task-popup") || ev.target.tagName === "SELECT") return;
         const ts = getTasks();
         const t  = ts.find(x => x.id === item.dataset.tid);
         if(t) {
@@ -1897,35 +1949,126 @@ function bindDashboardEvents(el){
           if(window.syncTask) syncTask(t);
           if(prev) syncStudyLogCloud(prev);
           if(now)  syncStudyLogCloud(now);
-          bodyEl.innerHTML = buildTaskboardToday(dashActiveDate);
-          bindTodayEvents();
-          refreshDashboardHeatmap(el);
-          renderTodayTasks(); renderHeatmap(); renderProfileCard(); renderCourseProgress();
+          dashOpenMenuTaskId = "";
+          rerenderFull();
         }
       })
     );
 
-    bodyEl.querySelectorAll("[data-dt]").forEach(btn =>
-      btn.addEventListener("click", ev => {
-        ev.stopPropagation();
-        const ts = getTasks();
-        const t  = ts.find(x => x.id === btn.dataset.dt);
-        if(window.deleteTask) deleteTask(btn.dataset.dt);
-        const cd = t ? getCompletedDateKey(t) : "";
-        saveTasks(ts.filter(x => x.id !== btn.dataset.dt));
-        if(cd) { syncStudyLog(cd); syncStudyLogCloud(cd); }
-        bodyEl.innerHTML = buildTaskboardToday(dashActiveDate);
-        bindTodayEvents();
-        refreshDashboardHeatmap(el);
-        renderTodayTasks(); renderHeatmap(); renderProfileCard(); renderCourseProgress();
+    /* ⋯ 弹层开关 */
+    bodyEl.querySelectorAll("[data-dt-settings]").forEach(btn =>
+      btn.addEventListener("click", e => {
+        e.stopPropagation();
+        const tid = btn.dataset.dtSettings;
+        dashOpenMenuTaskId = dashOpenMenuTaskId === tid ? "" : tid;
+        rerender();
       })
     );
 
+    /* 顺延快捷（明天/后天） */
+    bodyEl.querySelectorAll("[data-dt-defer-quick]").forEach(btn =>
+      btn.addEventListener("click", e => {
+        e.stopPropagation();
+        const tid = btn.dataset.dtDeferQuick;
+        const days = parseInt(btn.dataset.d, 10) || 1;
+        const targetDate = shiftDateKey(todayStr(), days);
+        const ts = getTasks();
+        const t  = ts.find(x => x.id === tid);
+        if(!t || t.done) return;
+        t.workingDate = targetDate; t.date = targetDate;
+        t.rolloverCount = Number(t.rolloverCount||0) + 1;
+        t.rolloverMode  = "manual";
+        saveTasks(ts);
+        if(window.syncTask) syncTask(t);
+        dashOpenMenuTaskId = "";
+        rerenderFull();
+      })
+    );
+
+    /* 顺延自定义日期行显隐 */
+    bodyEl.querySelectorAll("[data-dt-defer-show]").forEach(btn =>
+      btn.addEventListener("click", e => {
+        e.stopPropagation();
+        const row = bodyEl.querySelector(`#dt-defer-row-${btn.dataset.dtDeferShow}`);
+        if(row) row.style.display = row.style.display === "none" ? "flex" : "none";
+      })
+    );
+
+    /* 顺延自定义确认 */
+    bodyEl.querySelectorAll("[data-dt-defer-apply]").forEach(btn =>
+      btn.addEventListener("click", e => {
+        e.stopPropagation();
+        const tid = btn.dataset.dtDeferApply;
+        const targetDate = bodyEl.querySelector(`[data-dt-defer-custom="${tid}"]`)?.value || "";
+        if(!parseDateKey(targetDate)) return;
+        const ts = getTasks();
+        const t  = ts.find(x => x.id === tid);
+        if(!t || t.done) return;
+        t.workingDate = targetDate; t.date = targetDate;
+        t.rolloverCount = Number(t.rolloverCount||0) + 1;
+        t.rolloverMode  = "manual";
+        saveTasks(ts);
+        if(window.syncTask) syncTask(t);
+        dashOpenMenuTaskId = "";
+        rerenderFull();
+      })
+    );
+
+    /* 补卡确认 */
+    bodyEl.querySelectorAll("[data-dt-backfill]").forEach(btn =>
+      btn.addEventListener("click", e => {
+        e.stopPropagation();
+        const tid = btn.dataset.dtBackfill;
+        const targetDate = bodyEl.querySelector(`[data-dt-backfill-date="${tid}"]`)?.value || dashActiveDate;
+        if(!parseDateKey(targetDate)) return;
+        const ts = getTasks();
+        const t  = ts.find(x => x.id === tid);
+        if(!t) return;
+        const prev = getCompletedDateKey(t);
+        t.done = true; t.completedAt = buildCompletedAtByDateKey(targetDate);
+        saveTasks(ts);
+        const now = getCompletedDateKey(t);
+        if(prev) syncStudyLog(prev); if(now) syncStudyLog(now);
+        if(window.syncTask) syncTask(t);
+        if(prev) syncStudyLogCloud(prev); if(now) syncStudyLogCloud(now);
+        dashOpenMenuTaskId = "";
+        rerenderFull();
+      })
+    );
+
+    /* 删除任务 */
+    bodyEl.querySelectorAll("[data-dt-del]").forEach(btn =>
+      btn.addEventListener("click", e => {
+        e.stopPropagation();
+        const tid = btn.dataset.dtDel;
+        const ts = getTasks();
+        const t  = ts.find(x => x.id === tid);
+        if(window.deleteTask) deleteTask(tid);
+        const cd = t ? getCompletedDateKey(t) : "";
+        saveTasks(ts.filter(x => x.id !== tid));
+        if(cd) { syncStudyLog(cd); syncStudyLogCloud(cd); }
+        dashOpenMenuTaskId = "";
+        rerenderFull();
+      })
+    );
+
+    /* 标签内联编辑 */
     bodyEl.querySelectorAll(".task-tag[data-t]").forEach(tagEl => {
       const tid  = tagEl.closest("[data-tid]")?.dataset.tid;
       const task = getTasks().find(t => t.id === tid);
       if(task) makeTagEditable(tagEl, task);
     });
+
+    /* 点击外部关闭弹层 */
+    const closePopup = ev => {
+      if(dashOpenMenuTaskId && !ev.target.closest(".task-popup") && !ev.target.closest("[data-dt-settings]")){
+        dashOpenMenuTaskId = "";
+        rerender();
+      }
+    };
+    if(bodyEl._closeDtPopup) document.removeEventListener("click", bodyEl._closeDtPopup);
+    bodyEl._closeDtPopup = closePopup;
+    document.addEventListener("click", closePopup);
   }
 
   /* ── Month view events ── */
@@ -2153,29 +2296,38 @@ window.exportUnit = function(tab){
   const bodyEl = document.getElementById(tab==="lecture"?"tab-lec":"tab-ex");
   if(!bodyEl) return;
   const title  = `${unit.level} ${unit.code} ${unit.title}—${tab==="lecture"?"讲义":"练习题"}`;
-  const html   = `<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"/>
+  const printWin = window.open("", "_blank", "width=900,height=750");
+  if(!printWin){ alert("请允许浏览器弹出窗口，再点一次导出按钮"); return; }
+  printWin.document.write(`<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"/>
     <title>${title}</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=VT323&display=swap" rel="stylesheet"/>
-    <style>*{box-sizing:border-box}body{font-family:'Noto Sans SC',sans-serif;max-width:820px;margin:40px auto;padding:0 28px;color:#26201a;line-height:1.75;background:#f7f0de}
-    h1{font-family:'VT323',monospace;font-size:38px;margin:0 0 4px}.meta{color:#8a7a60;font-size:.85rem;margin:0 0 28px;padding-bottom:16px;border-bottom:2px solid #b8a882}
-    .lec-summary,.ex-answer-box,.ex-passage{padding:10px;border:1px solid #b8a882;background:#fff8ed;margin:6px 0}
-    .lec-section-label,.ex-type{font-family:'VT323',monospace;color:#3f62a0}
-    .lec-table{width:100%;border-collapse:collapse}.lec-table th,.lec-table td{border:1px solid #b8a882;padding:7px 10px;text-align:left}
-    .lec-table th{background:#ede3c8}.lec-examples{padding:10px;border:1px solid #b8a882;background:#fff8ed}
-    .lec-example-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:13px}
-    .lec-vocab-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:6px}
-    .lec-vocab-card{padding:8px;border:1px solid #b8a882;background:#fff8ed}
-    .ex-list{padding-left:18px}.grade-btn,.grade-input,.grade-result{display:none}
-    @media print{details{display:block}}</style>
-    </head><body><h1>${title}</h1>
-    <p class="meta">TCF Canada 备考·导出 ${new Date().toLocaleDateString("zh-CN",{year:"numeric",month:"long",day:"numeric"})}</p>
-    ${bodyEl.innerHTML}</body></html>`;
-  const blob = new Blob([html], {type:"text/html;charset=utf-8"});
-  const a    = document.createElement("a");
-  a.href     = URL.createObjectURL(blob);
-  a.download = `${unit.code.replace(/\s/g,"_")}_${tab==="lecture"?"讲义":"练习题"}.html`;
-  a.click();
-  URL.revokeObjectURL(a.href);
+    <style>
+      *{box-sizing:border-box}
+      body{font-family:'Noto Sans SC',sans-serif;max-width:820px;margin:40px auto;padding:0 28px;
+           color:#26201a;line-height:1.75;background:#f7f0de;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+      h1{font-family:'VT323',monospace;font-size:38px;margin:0 0 4px}
+      .meta{color:#8a7a60;font-size:.85rem;margin:0 0 28px;padding-bottom:16px;border-bottom:2px solid #b8a882}
+      .lec-summary,.ex-answer-box,.ex-passage{padding:10px;border:1px solid #b8a882;background:#fff8ed;margin:6px 0}
+      .lec-section-label,.ex-type{font-family:'VT323',monospace;color:#3f62a0}
+      .lec-table{width:100%;border-collapse:collapse}.lec-table th,.lec-table td{border:1px solid #b8a882;padding:7px 10px;text-align:left}
+      .lec-table th{background:#ede3c8;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+      .lec-examples{padding:10px;border:1px solid #b8a882;background:#fff8ed}
+      .lec-example-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:13px}
+      .lec-vocab-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:6px}
+      .lec-vocab-card{padding:8px;border:1px solid #b8a882;background:#fff8ed}
+      .ex-list{padding-left:18px}
+      .grade-btn,.grade-input,.grade-result,.ex-score-summary{display:none!important}
+      button{display:none!important}
+      details{display:block!important}details summary{display:none}
+      @media print{body{margin:0;padding:20px}@page{margin:15mm}}
+    </style>
+    </head><body>
+    <h1>${title}</h1>
+    <p class="meta">TCF Canada 备考 · 导出于 ${new Date().toLocaleDateString("zh-CN",{year:"numeric",month:"long",day:"numeric"})}</p>
+    ${bodyEl.innerHTML}
+    <script>window.addEventListener("load",function(){setTimeout(function(){window.print();},600)});<\/script>
+    </body></html>`);
+  printWin.document.close();
 };
 
 /* ══════════════════════════════════
