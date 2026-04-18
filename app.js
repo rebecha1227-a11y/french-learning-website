@@ -980,7 +980,7 @@ function renderTodayTasks(){
         const doneDate = getCompletedDateKey(t);
         const tomorrowKey = shiftDateKey(today, 1);
         return `
-          <div class="task-item ${t.done?"done":""}" data-tid="${esc(t.id)}">
+          <div class="task-item ${t.done?"done":""}" data-tid="${esc(t.id)}"${menuOpen?' style="position:relative;z-index:10"':""}>
             <button class="task-cb-btn" data-cb="${esc(t.id)}" aria-label="切换完成状态">
               <div class="task-cb">${t.done?"✓":""}</div>
             </button>
@@ -1338,7 +1338,7 @@ function buildTaskboardToday(activeDate, openMenuTaskId = "") {
         const menuOpen = openMenuTaskId === t.id;
         const doneDate = t.completedAt ? t.completedAt.slice(0,10) : date;
         return `
-        <div class="task-item ${t.done ? "done" : ""}" data-tid="${esc(t.id)}">
+        <div class="task-item ${t.done ? "done" : ""}" data-tid="${esc(t.id)}"${menuOpen?' style="position:relative;z-index:10"':""}>
           <div class="task-cb">${t.done ? "✓" : ""}</div>
           <div class="task-body">
             <div class="task-title">${esc(t.title)}</div>
