@@ -22,7 +22,9 @@ TCF Canada 备考个人学习管理工具。纯 HTML + CSS + Vanilla JS，Supaba
 ### 验证工作流
 1. 改代码后启动本地预览：`npx serve -l 3456 .` (http://localhost:3456)
 2. 用 `/webapp-testing` 自动验证：登录 → 点按钮 → 填表单 → 操作验证
-3. 自动测试通过 → `git push origin main`
+3. 自动测试通过 → push 到对应分支
+   - 简单改动（main 分支）→ `git push origin main`
+   - 复杂改动（feature 分支）→ `git push origin feature-xxx` 再合并 main
 4. 万一有奇怪问题 → 用 `preview_eval` + 截图手工查
 5. GitHub Pages 约 2 分钟自动部署
 
