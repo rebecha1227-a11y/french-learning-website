@@ -362,6 +362,7 @@ function syncStudyLog(dateStr){
     }
   }
   saveStudyLog(log);
+  if(typeof refreshLearningWidgets === "function") refreshLearningWidgets();
 }
 
 function syncStudyLogCloud(dateStr){
@@ -979,32 +980,36 @@ function renderTodayTasks(){
             <div class="task-body">
               <div class="task-title">${esc(t.title)}</div>
               ${rolloverInfo}
-              ${menuOpen ? `<div class="task-menu">
-                <div class="task-menu-row">
-                  <span class="task-menu-label">顺延</span>
-                  <select class="add-task-select task-menu-select" data-defer-mode="${esc(t.id)}">
-                    <option value="tomorrow">明天</option>
-                    <option value="dayAfter">后天</option>
-                    <option value="custom">自定义日期</option>
-                  </select>
-                  <input class="form-input task-menu-date" type="date" data-defer-date="${esc(t.id)}" value="${esc(tomorrowKey)}" style="display:none"/>
-                  <button class="btn-ghost btn-small" data-defer-apply="${esc(t.id)}" ${t.done?"disabled":""}>确认</button>
-                </div>
-                <div class="task-menu-row">
-                  <span class="task-menu-label">补卡</span>
-                  <input class="form-input task-menu-date" type="date" data-backfill-date="${esc(t.id)}" value="${esc(doneDate||today)}"/>
-                  <button class="btn-ghost btn-small" data-backfill="${esc(t.id)}">确认</button>
-                </div>
-              </div>` : ""}
             </div>
             <div class="task-actions">
               <span class="task-tag" data-t="${esc(t.type)}" style="pointer-events:none">${esc(t.type)}</span>
               <button class="btn-ghost btn-small task-more-btn" data-settings="${esc(t.id)}" aria-label="更多操作">⋯</button>
+              ${menuOpen ? `<div class="task-popup">
+                <div class="task-popup-row">
+                  <span class="task-popup-label">↩ 顺延</span>
+                  <div class="task-popup-btns">
+                    <button class="btn-ghost btn-small" data-defer-quick="${esc(t.id)}" data-d="1"${t.done?" disabled":""}>明天</button>
+                    <button class="btn-ghost btn-small" data-defer-quick="${esc(t.id)}" data-d="2"${t.done?" disabled":""}>后天</button>
+                    <button class="btn-ghost btn-small" data-defer-show-date="${esc(t.id)}"${t.done?" disabled":""}>自定义</button>
+                  </div>
+                </div>
+                <div class="task-popup-date-row" id="defer-date-row-${esc(t.id)}" style="display:none">
+                  <input type="date" class="form-input task-popup-date-input" data-defer-custom="${esc(t.id)}" value="${esc(tomorrowKey)}"/>
+                  <button class="btn-ghost btn-small" data-defer-apply="${esc(t.id)}"${t.done?" disabled":""}>确认</button>
+                </div>
+                <div class="task-popup-row task-popup-sep">
+                  <span class="task-popup-label">📅 补卡</span>
+                  <div class="task-popup-btns">
+                    <input type="date" class="form-input task-popup-date-input" data-backfill-date="${esc(t.id)}" value="${esc(doneDate||today)}"/>
+                    <button class="btn-ghost btn-small" data-backfill="${esc(t.id)}">确认</button>
+                  </div>
+                </div>
+              </div>` : ""}
             </div>
           </div>`;
       }).join("") : `<div class="task-empty">今天还没有任务，去今日学习页添加吧。</div>`}
     </div>
-    <div style="margin-top:8px;text-align:right">
+    <div style="margin-top:8px;margin-bottom:12px;text-align:right">
       <button class="btn-ghost btn-small" onclick="showPage('dashboard')" style="font-size:12px">+ 添加任务 · 今日学习 →</button>
     </div>
     <div class="task-summary-row">
@@ -1055,33 +1060,51 @@ function renderTodayTasks(){
     })
   );
 
-  /* 顺延模式切换（自定义日期显隐） */
-  el.querySelectorAll("[data-defer-mode]").forEach(sel =>
-    sel.addEventListener("change", () => {
-      const customInput = el.querySelector(`[data-defer-date="${sel.dataset.deferMode}"]`);
-      if(customInput) customInput.style.display = sel.value === "custom" ? "inline-flex" : "none";
+  /* 顺延快捷按钮（明天/后天） */
+  el.querySelectorAll("[data-defer-quick]").forEach(btn =>
+    btn.addEventListener("click", e => {
+      e.stopPropagation();
+      const tid = btn.dataset.deferQuick;
+      const days = parseInt(btn.dataset.d, 10) || 1;
+      const targetDate = shiftDateKey(today, days);
+      const ts = getTasks();
+      const t  = ts.find(x => x.id === tid);
+      if(!t || t.done) return;
+      t.workingDate   = targetDate;
+      t.date          = targetDate;
+      t.rolloverCount = Number(t.rolloverCount || 0) + 1;
+      t.rolloverMode  = "manual";
+      saveTasks(ts);
+      if(window.syncTask) syncTask(t);
+      el.dataset.openMenuTaskId = "";
+      refreshLearningWidgets();
     })
   );
 
-  /* 顺延确认 */
+  /* 自定义日期行显隐 */
+  el.querySelectorAll("[data-defer-show-date]").forEach(btn =>
+    btn.addEventListener("click", e => {
+      e.stopPropagation();
+      const row = el.querySelector(`#defer-date-row-${btn.dataset.deferShowDate}`);
+      if(row) row.style.display = row.style.display === "none" ? "flex" : "none";
+    })
+  );
+
+  /* 顺延自定义日期确认 */
   el.querySelectorAll("[data-defer-apply]").forEach(btn =>
     btn.addEventListener("click", e => {
       e.stopPropagation();
       const tid = btn.dataset.deferApply;
-      const modeEl = el.querySelector(`[data-defer-mode="${tid}"]`);
-      const customDateEl = el.querySelector(`[data-defer-date="${tid}"]`);
-      if(!modeEl) return;
-      let targetDate = shiftDateKey(today, 1);
-      if(modeEl.value === "dayAfter") targetDate = shiftDateKey(today, 2);
-      if(modeEl.value === "custom")   targetDate = customDateEl?.value || "";
+      const customDateEl = el.querySelector(`[data-defer-custom="${tid}"]`);
+      const targetDate = customDateEl?.value || "";
       if(!parseDateKey(targetDate)) return;
       const ts = getTasks();
       const t  = ts.find(x => x.id === tid);
       if(!t || t.done) return;
-      t.workingDate    = targetDate;
-      t.date           = targetDate;
-      t.rolloverCount  = Number(t.rolloverCount || 0) + 1;
-      t.rolloverMode   = "manual";
+      t.workingDate   = targetDate;
+      t.date          = targetDate;
+      t.rolloverCount = Number(t.rolloverCount || 0) + 1;
+      t.rolloverMode  = "manual";
       saveTasks(ts);
       if(window.syncTask) syncTask(t);
       el.dataset.openMenuTaskId = "";
@@ -1114,6 +1137,17 @@ function renderTodayTasks(){
       refreshLearningWidgets();
     })
   );
+
+  /* 点击外部关闭 popup */
+  const closePopup = e => {
+    if(el.dataset.openMenuTaskId && !e.target.closest(".task-popup") && !e.target.closest("[data-settings]")){
+      el.dataset.openMenuTaskId = "";
+      renderTodayTasks();
+    }
+  };
+  document.removeEventListener("click", el._closePopup);
+  el._closePopup = closePopup;
+  document.addEventListener("click", closePopup);
 }
 
 /* ── COURSE PROGRESS ── */
@@ -1223,9 +1257,27 @@ function renderHeatmap(){
 }
 
 function renderAiTip(){
+  const log     = getStudyLog();
+  const streak  = computeStreak(log);
+  const week7   = getLast7DaysDone(log);
+  const tasks   = getTasks();
+  const todayDone = tasks.filter(t => t.done && getCompletedDateKey(t) === today).length;
+  const mistakes  = getMistakes ? getMistakes().filter(m => !m.mastered) : [];
+
+  const tips = [];
+  if(streak >= 7)        tips.push(`🔥 已连续打卡 ${streak} 天，保持住！`);
+  else if(streak >= 3)   tips.push(`🔥 连续打卡 ${streak} 天，继续加油！`);
+  else if(streak === 0)  tips.push("今天还没有打卡，先完成一个任务开始吧。");
+  if(week7 >= 10)        tips.push(`近 7 天完成 ${week7} 个任务，节奏很稳！`);
+  else if(week7 > 0)     tips.push(`近 7 天完成了 ${week7} 个任务，尝试保持每天至少 1 个。`);
+  if(mistakes.length >= 5) tips.push(`错题池还有 ${mistakes.length} 道未掌握，今天挑 2 道复盘吧。`);
+  if(todayDone === 0)    tips.push("今日任务还未开始，完成一个就算进步！");
+  else                   tips.push(`今天已完成 ${todayDone} 个任务，继续！`);
+
+  const display = tips.length ? tips : aiTips;
   document.getElementById("aitip-card").innerHTML =
-    `<div class="aitip-label">🤖 AI 备考建议</div>` +
-    aiTips.map(t=>`<div class="aitip-item">${esc(t)}</div>`).join("");
+    `<div class="aitip-label">📌 每日学习提示</div>` +
+    display.map(t=>`<div class="aitip-item">${esc(t)}</div>`).join("");
 }
 
 /* ══════════════════════════════════
@@ -1922,14 +1974,10 @@ function buildCurriculum(){
         <p style="font-size:12px;color:var(--text-sub);margin-bottom:10px">${esc(book.caption)}</p>
         <div class="unit-grid">
           ${(()=>{
-            // Find if any unit in this book has been started
-            const anyStarted = book.units.some((_,ui2) => computeUnitProgress(book.units[ui2].id, bi, ui2) > 0);
-            // Also check if any previous book has progress
-            const prevBooksStarted = bi > 0;
             return book.units.map((unit,ui) => {
               const p = computeUnitProgress(unit.id, bi, ui);
-              // Show "推荐起点" on the very first unit of the first book if nothing started yet
-              const isRecommended = bi === 0 && ui === 0 && !anyStarted && !prevBooksStarted && p === 0;
+              // Show badge only on the very first unit if it has zero progress itself
+              const isRecommended = bi === 0 && ui === 0 && p === 0;
               return `<button class="unit-card${isRecommended ? " unit-card-start" : ""}" data-unit-id="${esc(unit.id)}">
                 ${isRecommended ? `<span class="unit-start-badge">▶ 从这里开始</span>` : ""}
                 <span class="unit-code">${esc(unit.code)}</span>
@@ -1970,9 +2018,9 @@ function buildUnitDetail(){
         <p style="font-size:12px;color:var(--text-dim);margin-top:2px">${esc(unit.focus)}</p>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn-ghost" onclick="showPage('curriculum')">← 返回课程</button>
-        <button class="btn-ghost" onclick="exportUnit('lecture')">↓ 讲义</button>
-        <button class="btn-ghost" onclick="exportUnit('exercises')">↓ 练习</button>
+        <button class="inner-back-btn" onclick="showPage('curriculum')">← 课程主线</button>
+        <button class="btn-ghost" onclick="exportUnit('lecture')" style="font-size:12px">⬇ 导出讲义 PDF</button>
+        <button class="btn-ghost" onclick="exportUnit('exercises')" style="font-size:12px">⬇ 导出练习 PDF</button>
       </div>
     </div>
 
@@ -2068,6 +2116,32 @@ function bindUnitDetailEvents(el){
           saveMistakes(ml);
           if(window.syncMistake) syncMistake(ml[ml.length-1]);
           resEl.innerHTML = `✗ 错误（参考：${esc(correct)}）<span class="mistake-auto-added">✓ 已自动加入错题库</span>`;
+        }
+      }
+
+      // 检查是否全部判题完成 → 显示成绩小结
+      const tabEx = el.querySelector("#tab-ex");
+      if(tabEx){
+        const allRows    = tabEx.querySelectorAll(".ex-grade-row");
+        const gradedRows = tabEx.querySelectorAll(".grade-result.correct, .grade-result.wrong");
+        if(allRows.length > 0 && gradedRows.length >= allRows.length){
+          const correctCount = tabEx.querySelectorAll(".grade-result.correct").length;
+          const total        = allRows.length;
+          const pct          = Math.round((correctCount / total) * 100);
+          let existing = tabEx.querySelector(".ex-score-summary");
+          if(!existing){
+            existing = document.createElement("div");
+            existing.className = "ex-score-summary";
+            tabEx.appendChild(existing);
+          }
+          const emoji = pct >= 80 ? "🎉" : pct >= 60 ? "👍" : "💪";
+          existing.innerHTML = `
+            <div class="ex-score-title">${emoji} 本组练习完成</div>
+            <div class="ex-score-stats">
+              <span>共 <strong>${total}</strong> 题</span>
+              <span>正确 <strong style="color:var(--accent-green)">${correctCount}</strong> 题</span>
+              <span>正确率 <strong style="color:${pct>=80?"var(--accent-teal)":pct>=60?"var(--accent-gold)":"var(--accent-rose)"}">${pct}%</strong></span>
+            </div>`;
         }
       }
     })

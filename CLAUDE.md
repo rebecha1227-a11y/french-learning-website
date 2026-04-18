@@ -15,8 +15,13 @@ TCF Canada 备考个人学习管理工具。纯 HTML + CSS + Vanilla JS，Supaba
 ## 本项目工作流
 - **复杂/不确定的改动** → 开新分身 + 新分支 → 满意后合并 main
 - **简单小改动** → 主 worktree 的 main 上直接改、直接推
-- 改完 UX 问题先截图验证再推送
 - commit message 用中文，简明扼要
+
+**验证工作流（每次改代码后）：**
+1. 改代码
+2. `/webapp-testing` 自动验证（截图 + 交互测试）
+3. 测试通过 → commit + push main
+4. 有问题 → 截图手工排查 → 再修 → 再测
 
 ---
 
