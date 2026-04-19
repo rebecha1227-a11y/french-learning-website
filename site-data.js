@@ -525,6 +525,82 @@ window.siteData = {
                   ]
                 }
               ],
+              dictation: {
+                intro: "本单元默写重点：身份信息词汇、三大核心动词变位（含否定）、国籍词阴阳性、数字 32–100。",
+                groups: [
+                  {
+                    title: "核心词汇默写：身份信息",
+                    type: "vocab",
+                    items: [
+                      { prompt: "姓（surname）", answer: "le nom", hint: "阳性" },
+                      { prompt: "名（first name）", answer: "le prénom", hint: "阳性" },
+                      { prompt: "出生日期", answer: "la date de naissance", hint: "阴性" },
+                      { prompt: "出生地", answer: "le lieu de naissance", hint: "阳性" },
+                      { prompt: "国籍", answer: "la nationalité", hint: "-té 结尾，阴性" },
+                      { prompt: "语言", answer: "la langue", hint: "阴性" },
+                      { prompt: "邮箱地址", answer: "l'adresse mail (f.)", hint: "元音开头，缩写 l'" },
+                      { prompt: "电话号码", answer: "le numéro de téléphone", hint: "阳性" }
+                    ]
+                  },
+                  {
+                    title: "国籍词默写（阳性 / 阴性）",
+                    type: "vocab",
+                    items: [
+                      { prompt: "法国人（阳）", answer: "français", hint: "-ais 结尾" },
+                      { prompt: "法国人（阴）", answer: "française", hint: "加 e，末尾 s 发音" },
+                      { prompt: "中国人（阳）", answer: "chinois", hint: "-ois 结尾" },
+                      { prompt: "中国人（阴）", answer: "chinoise", hint: "加 e" },
+                      { prompt: "日本人（阳）", answer: "japonais", hint: "-ais 结尾" },
+                      { prompt: "日本人（阴）", answer: "japonaise", hint: "加 e" },
+                      { prompt: "意大利人（阳）", answer: "italien", hint: "-ien 结尾" },
+                      { prompt: "意大利人（阴）", answer: "italienne", hint: "-ien → -ienne" },
+                      { prompt: "美国人（阳）", answer: "américain", hint: "-ain 结尾" },
+                      { prompt: "美国人（阴）", answer: "américaine", hint: "加 e" }
+                    ]
+                  },
+                  {
+                    title: "动词变位默写：être / avoir / s'appeler",
+                    type: "conjugation",
+                    items: [
+                      { prompt: "je + être", answer: "je suis", hint: "完全不规则" },
+                      { prompt: "tu + être", answer: "tu es", hint: "" },
+                      { prompt: "il + être", answer: "il est", hint: "" },
+                      { prompt: "nous + être", answer: "nous sommes", hint: "记住 sommes" },
+                      { prompt: "vous + être", answer: "vous êtes", hint: "注意 ê" },
+                      { prompt: "ils + être", answer: "ils sont", hint: "" },
+                      { prompt: "je + avoir", answer: "j'ai", hint: "元音前 je → j'" },
+                      { prompt: "tu + avoir", answer: "tu as", hint: "" },
+                      { prompt: "elle + avoir", answer: "elle a", hint: "" },
+                      { prompt: "nous + avoir", answer: "nous avons", hint: "" },
+                      { prompt: "vous + avoir", answer: "vous avez", hint: "" },
+                      { prompt: "ils + avoir", answer: "ils ont", hint: "" },
+                      { prompt: "je + s'appeler", answer: "je m'appelle", hint: "me → m' 在元音前" },
+                      { prompt: "tu + s'appeler", answer: "tu t'appelles", hint: "te → t'" },
+                      { prompt: "elle + s'appeler", answer: "elle s'appelle", hint: "" },
+                      { prompt: "je + être（否定）", answer: "je ne suis pas", hint: "ne...pas 包夹动词" },
+                      { prompt: "il + avoir（否定）", answer: "il n'a pas", hint: "ne → n' 在元音前" },
+                      { prompt: "je + s'appeler（否定）", answer: "je ne m'appelle pas", hint: "否定包夹代词+动词" }
+                    ]
+                  },
+                  {
+                    title: "数字默写（32–100）",
+                    type: "numbers",
+                    items: [
+                      { prompt: "32", answer: "trente-deux", hint: "trente + 数字" },
+                      { prompt: "45", answer: "quarante-cinq", hint: "quarante + 数字" },
+                      { prompt: "58", answer: "cinquante-huit", hint: "cinquante + 数字" },
+                      { prompt: "61", answer: "soixante et un", hint: "61 加 et" },
+                      { prompt: "70", answer: "soixante-dix", hint: "60+10" },
+                      { prompt: "71", answer: "soixante et onze", hint: "60+11" },
+                      { prompt: "80", answer: "quatre-vingts", hint: "4×20，末尾有 s" },
+                      { prompt: "81", answer: "quatre-vingt-un", hint: "4×20+1，无 s" },
+                      { prompt: "90", answer: "quatre-vingt-dix", hint: "4×20+10" },
+                      { prompt: "91", answer: "quatre-vingt-onze", hint: "4×20+11" },
+                      { prompt: "100", answer: "cent", hint: "" }
+                    ]
+                  }
+                ]
+              },
               phonetique: "本单元重点：节奏组（groupe rythmique）。法语的重音固定落在每个节奏组的最后一个音节。例：Je m'appelle / Enzo / je suis / italien（4个节奏组，4个重音）。注意与 en/aux 的联诵：en Italie [ɑ̃nitali]，aux États-Unis [ozɛtazyni]。",
               tcf: "TCF Canada 听力第一大题常考：两人相遇，听取身份信息（姓名、国籍、年龄、职业）。阅读常考：读一份简短的自我介绍或注册表，回答“此人来自哪里”“此人几岁”等。本单元的介词（à/au/en/aux）在阅读中也高频出现，需要能快速识别城市/国家对应关系。"
             },
@@ -750,6 +826,69 @@ window.siteData = {
                   ]
                 }
               ],
+              dictation: {
+                intro: "本单元默写重点：家庭成员、职业词（阴阳性对比）、-er 动词变位（含否定）、重要句型。",
+                groups: [
+                  {
+                    title: "家庭成员词汇默写",
+                    type: "vocab",
+                    items: [
+                      { prompt: "父母（双亲）", answer: "les parents", hint: "复数" },
+                      { prompt: "父亲", answer: "le père", hint: "阳性" },
+                      { prompt: "母亲", answer: "la mère", hint: "阴性" },
+                      { prompt: "兄弟", answer: "le frère", hint: "阳性" },
+                      { prompt: "姐妹", answer: "la sœur", hint: "注意 œ" },
+                      { prompt: "儿子", answer: "le fils", hint: "ls 不发音" },
+                      { prompt: "女儿", answer: "la fille", hint: "阴性" },
+                      { prompt: "祖父", answer: "le grand-père", hint: "连字符" },
+                      { prompt: "祖母", answer: "la grand-mère", hint: "连字符" },
+                      { prompt: "表/堂兄弟（男）", answer: "le cousin", hint: "阳性" },
+                      { prompt: "表/堂姐妹（女）", answer: "la cousine", hint: "加 e" }
+                    ]
+                  },
+                  {
+                    title: "职业词默写（阴阳性对比）",
+                    type: "vocab",
+                    items: [
+                      { prompt: "理发师（男）", answer: "le coiffeur", hint: "-eur 结尾" },
+                      { prompt: "理发师（女）", answer: "la coiffeuse", hint: "-eur → -euse" },
+                      { prompt: "护士（男）", answer: "l'infirmier", hint: "-er 结尾" },
+                      { prompt: "护士（女）", answer: "l'infirmière", hint: "-er → -ère" },
+                      { prompt: "演员（男）", answer: "l'acteur", hint: "-teur 结尾" },
+                      { prompt: "演员（女）", answer: "l'actrice", hint: "-teur → -trice" },
+                      { prompt: "IT/程序员（男）", answer: "l'informaticien", hint: "-ien 结尾" },
+                      { prompt: "IT/程序员（女）", answer: "l'informaticienne", hint: "-ien → -ienne" },
+                      { prompt: "花艺师（阴阳同形）", answer: "le/la fleuriste", hint: "-e 结尾，不变" }
+                    ]
+                  },
+                  {
+                    title: "动词变位默写：aimer / habiter / détester",
+                    type: "conjugation",
+                    items: [
+                      { prompt: "je + aimer", answer: "j'aime", hint: "元音前 je → j'" },
+                      { prompt: "tu + aimer", answer: "tu aimes", hint: "加 -es" },
+                      { prompt: "il + habiter", answer: "il habite", hint: "加 -e" },
+                      { prompt: "nous + aimer", answer: "nous aimons", hint: "加 -ons" },
+                      { prompt: "vous + habiter", answer: "vous habitez", hint: "加 -ez" },
+                      { prompt: "ils + détester", answer: "ils détestent", hint: "-ent 不发音！" },
+                      { prompt: "elle + aimer（否定）", answer: "elle n'aime pas", hint: "ne → n' 在元音前" },
+                      { prompt: "ils + habiter（否定）", answer: "ils n'habitent pas", hint: "ne → n' 在元音前" },
+                      { prompt: "je + détester（否定）", answer: "je ne déteste pas", hint: "ne...pas 包夹动词" }
+                    ]
+                  },
+                  {
+                    title: "重要句型默写",
+                    type: "phrases",
+                    items: [
+                      { prompt: "我住在一个安静的街区。", answer: "J'habite dans un quartier calme.", hint: "habiter + dans + 冠词 + 名词" },
+                      { prompt: "我父亲是工程师。（职业前无冠词）", answer: "Mon père est informaticien.", hint: "être + 职业，无冠词！" },
+                      { prompt: "她不喜欢雪。（否定句）", answer: "Elle n'aime pas la neige.", hint: "ne → n' 在元音前" },
+                      { prompt: "我的朋友 Sophie（阴性，元音开头）", answer: "mon amie Sophie", hint: "mon 替代 ma，避免元音相撞" },
+                      { prompt: "她们住在英国。", answer: "Elles habitent en Angleterre.", hint: "Angleterre 阴性国名，用 en" }
+                    ]
+                  }
+                ]
+              },
               phonetique: "本单元重点：-er 动词的 -ent 结尾（ils/elles）不发音，造成口语中单数复数同音：il aime = ils aiment。另外注意与冠词/物主代词的联诵（liaison）：les enfants [lezɑ̃fɑ̃]、mes amis [mezami]、mon ami [mɔ̃nami]。联诵是法语流利度的关键。",
               tcf: "TCF Canada 阅读和听力常出现家庭关系、居住情况、职业信息等题材（如：读一封邮件，判断写信人的家庭情况）。物主代词在听力理解中非常关键，错误识别 son/sa 的指向会导致整道题判断错误。-er 动词是所有作文和口语的基础骨架。"
             },
