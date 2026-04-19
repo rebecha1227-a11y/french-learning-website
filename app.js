@@ -2865,33 +2865,60 @@ function renderVocabGroup(g){
 function renderDictation(dictation){
   if(!dictation?.groups?.length) return "";
   const typeLabel = { vocab:"词汇默写", conjugation:"变位默写", numbers:"数字默写", phrases:"句型默写" };
-  const groups = dictation.groups.map(g => {
-    const items = (g.items||[]).map((item, i) => `
-      <div class="dict-item" style="border-bottom:1px solid var(--border);padding:8px 0">
-        <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap">
-          <span style="font-size:12px;color:var(--text-dim);min-width:20px">${i+1}.</span>
-          <span style="font-weight:600;flex:1">${esc(item.prompt)}</span>
-          ${item.hint?`<span style="font-size:11px;color:var(--text-dim);font-style:italic">💡 ${esc(item.hint)}</span>`:""}
-        </div>
-        <details class="ex-answer-box" style="margin-top:4px;margin-left:28px">
-          <summary>显示答案</summary>
-          <span class="ex-answer" style="font-size:14px">${esc(item.answer)}</span>
-        </details>
-      </div>`).join("");
+  // cols per row by type
+  const colsFor = { vocab:2, conjugation:2, numbers:3, phrases:1 };
+
+  const groupsHtml = dictation.groups.map(g => {
+    const items = g.items || [];
+    const cols = colsFor[g.type] || 2;
+    const blankW = g.type === "phrases" ? "220px" : g.type === "numbers" ? "100px" : "110px";
+    const promptStyle = "padding:3px 6px;font-size:12px;white-space:nowrap;color:var(--text-main,#222)";
+    const blankStyle  = `border-bottom:1.5px solid #888;min-width:${blankW};padding:0 4px 1px`;
+    const gapStyle    = "width:14px";
+
+    let rows = "";
+    for(let i = 0; i < items.length; i += cols){
+      let cells = "";
+      for(let j = 0; j < cols; j++){
+        const item = items[i+j];
+        if(item){
+          cells += `<td style="${promptStyle}"><span style="color:var(--text-dim);margin-right:3px;font-size:11px">${i+j+1}.</span>${esc(item.prompt)}</td><td style="${blankStyle}"></td>`;
+        } else {
+          cells += `<td></td><td></td>`;
+        }
+        if(j < cols-1) cells += `<td style="${gapStyle}"></td>`;
+      }
+      rows += `<tr style="height:30px">${cells}</tr>`;
+    }
+
+    // answers for this group (inline, compact)
+    const answerLine = items.map((item,i) =>
+      `<span style="margin-right:10px;font-size:12px"><b>${i+1}.</b> ${esc(item.answer)}</span>`
+    ).join("");
+
     return `
-      <div style="margin-bottom:20px">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-          <span style="font-weight:700;font-size:14px">${esc(g.title)}</span>
-          <span style="font-size:11px;background:var(--accent-dim,#e8f0fe);color:var(--accent,#3f62a0);padding:2px 8px;border-radius:10px">${typeLabel[g.type]||g.type}</span>
+      <div style="margin-bottom:18px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <span style="font-weight:700;font-size:13px">${esc(g.title)}</span>
+          <span style="font-size:11px;padding:1px 7px;background:#eee;border-radius:8px;color:#555">${typeLabel[g.type]||g.type}</span>
         </div>
-        ${items}
+        <table style="width:100%;border-collapse:collapse"><tbody>${rows}</tbody></table>
+        <div class="dict-answer-group" style="margin-top:4px;display:none">
+          <div style="background:#f5f7fa;border-radius:4px;padding:6px 10px;font-size:12px;line-height:1.8;color:#444;flex-wrap:wrap">
+            ${answerLine}
+          </div>
+        </div>
       </div>`;
   }).join("");
+
   return `
-    <div class="lec-section" style="border:2px solid var(--accent,#3f62a0);border-radius:8px;padding:16px;margin-top:16px">
-      <span class="lec-section-label" style="color:var(--accent,#3f62a0)">✏️ 默写板块</span>
-      ${dictation.intro?`<p style="font-size:12px;color:var(--text-dim);margin:4px 0 12px">${esc(dictation.intro)}</p>`:""}
-      ${groups}
+    <div class="ex-block">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:6px">
+        <span class="ex-type">✏️ 默写板块</span>
+        <button class="btn-ghost btn-small" onclick="toggleDictAnswers(this)" style="font-size:11px">📋 显示答案（批改用）</button>
+      </div>
+      <p class="ex-instruction" style="margin-bottom:12px">${esc(dictation.intro||"看左列提示，在右侧空格写出法语答案，完成后点右上角按钮核对。")}</p>
+      ${groupsHtml}
     </div>`;
 }
 
@@ -2910,14 +2937,22 @@ function renderLecture(unit){
     ${canDo?`<div class="lec-section"><span class="lec-section-label">学完你应该会</span><ul class="lec-cando-list">${canDo}</ul></div>`:""}
     ${grammar?`<div class="lec-section"><span class="lec-section-label">语法精讲</span>${grammar}</div>`:""}
     ${vocab?`<div class="lec-section"><span class="lec-section-label">词汇积累</span>${vocab}</div>`:""}
-    ${renderDictation(lec.dictation)}
     ${lec.phonetique?`<div class="lec-phonetique"><span class="lec-section-label">语音重点</span><p>${esc(lec.phonetique)}</p></div>`:""}
     ${lec.tcf?`<div class="lec-tcf"><span class="lec-tcf-badge">TCF 关联</span><span style="font-size:12px">${esc(lec.tcf)}</span></div>`:""}`;
 }
 
+window.toggleDictAnswers = function(btn){
+  const block = btn.closest(".ex-block");
+  const groups = block.querySelectorAll(".dict-answer-group");
+  const showing = groups[0]?.style.display !== "none";
+  groups.forEach(g => g.style.display = showing ? "none" : "block");
+  btn.textContent = showing ? "📋 显示答案（批改用）" : "📋 收起答案";
+};
+
 function renderExercises(unit){
-  if(!unit.exercises?.length) return `<p style="color:var(--text-dim);font-size:13px">本单元练习题即将补充。</p>`;
-  return unit.exercises.map((ex, exIndex) => {
+  const dictHtml = unit.lecture?.dictation ? renderDictation(unit.lecture.dictation) : "";
+  if(!unit.exercises?.length) return dictHtml || `<p style="color:var(--text-dim);font-size:13px">本单元练习题即将补充。</p>`;
+  return dictHtml + unit.exercises.map((ex, exIndex) => {
     if(ex.passage) return `<div class="ex-block">
       <span class="ex-type">${esc(ex.type)}</span>
       <p class="ex-instruction">${esc(ex.instruction)}</p>
