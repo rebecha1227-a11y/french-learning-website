@@ -2862,6 +2862,39 @@ function renderVocabGroup(g){
   </div>`;
 }
 
+function renderDictation(dictation){
+  if(!dictation?.groups?.length) return "";
+  const typeLabel = { vocab:"词汇默写", conjugation:"变位默写", numbers:"数字默写", phrases:"句型默写" };
+  const groups = dictation.groups.map(g => {
+    const items = (g.items||[]).map((item, i) => `
+      <div class="dict-item" style="border-bottom:1px solid var(--border);padding:8px 0">
+        <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap">
+          <span style="font-size:12px;color:var(--text-dim);min-width:20px">${i+1}.</span>
+          <span style="font-weight:600;flex:1">${esc(item.prompt)}</span>
+          ${item.hint?`<span style="font-size:11px;color:var(--text-dim);font-style:italic">💡 ${esc(item.hint)}</span>`:""}
+        </div>
+        <details class="ex-answer-box" style="margin-top:4px;margin-left:28px">
+          <summary>显示答案</summary>
+          <span class="ex-answer" style="font-size:14px">${esc(item.answer)}</span>
+        </details>
+      </div>`).join("");
+    return `
+      <div style="margin-bottom:20px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <span style="font-weight:700;font-size:14px">${esc(g.title)}</span>
+          <span style="font-size:11px;background:var(--accent-dim,#e8f0fe);color:var(--accent,#3f62a0);padding:2px 8px;border-radius:10px">${typeLabel[g.type]||g.type}</span>
+        </div>
+        ${items}
+      </div>`;
+  }).join("");
+  return `
+    <div class="lec-section" style="border:2px solid var(--accent,#3f62a0);border-radius:8px;padding:16px;margin-top:16px">
+      <span class="lec-section-label" style="color:var(--accent,#3f62a0)">✏️ 默写板块</span>
+      ${dictation.intro?`<p style="font-size:12px;color:var(--text-dim);margin:4px 0 12px">${esc(dictation.intro)}</p>`:""}
+      ${groups}
+    </div>`;
+}
+
 function renderLecture(unit){
   const lec = unit.lecture;
   if(!lec) return `<p style="color:var(--text-dim);font-size:13px">本单元讲义即将补充。</p>`;
@@ -2877,6 +2910,7 @@ function renderLecture(unit){
     ${canDo?`<div class="lec-section"><span class="lec-section-label">学完你应该会</span><ul class="lec-cando-list">${canDo}</ul></div>`:""}
     ${grammar?`<div class="lec-section"><span class="lec-section-label">语法精讲</span>${grammar}</div>`:""}
     ${vocab?`<div class="lec-section"><span class="lec-section-label">词汇积累</span>${vocab}</div>`:""}
+    ${renderDictation(lec.dictation)}
     ${lec.phonetique?`<div class="lec-phonetique"><span class="lec-section-label">语音重点</span><p>${esc(lec.phonetique)}</p></div>`:""}
     ${lec.tcf?`<div class="lec-tcf"><span class="lec-tcf-badge">TCF 关联</span><span style="font-size:12px">${esc(lec.tcf)}</span></div>`:""}`;
 }
