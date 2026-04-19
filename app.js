@@ -394,11 +394,13 @@ function toggleManualCheckin(dateStr){
   syncStudyLogCloud(dateStr);
 }
 
-function applyAutoRolloverIfNeeded(){
+function applyAutoRolloverIfNeeded(force = false){
   const settings = getRolloverSettings();
-  if(!settings.enabled) return;
   const today = todayStr();
-  if(settings.lastRunDate === today) return;
+  if(!force){
+    if(!settings.enabled) return;
+    if(settings.lastRunDate === today) return;
+  }
 
   const tasks = getTasks();
   const moved = [];
@@ -413,16 +415,20 @@ function applyAutoRolloverIfNeeded(){
     }
   });
 
+  settings.enabled = true;
   settings.lastRunDate = today;
   settings.lastRunMoved = moved.length;
   saveRolloverSettings(settings);
 
-  if(!moved.length) return;
+  if(!moved.length){
+    if(force) autoRolloverNotice = "没有需要顺延的过期任务";
+    return;
+  }
   saveTasks(tasks);
   if(window.syncTask) moved.forEach(t => syncTask(t));
   trackMetric("rollover_auto_runs", 1);
   trackMetric("rollover_auto_count", moved.length);
-  autoRolloverNotice = settings.notify ? `已自动顺延 ${moved.length} 条未完成任务到今天` : "";
+  autoRolloverNotice = `已顺延 ${moved.length} 条未完成任务到今天`;
 }
 
 function getPlanningExecutionRate(tasks = getTasks()){
@@ -1722,6 +1728,7 @@ function buildDashboard(){
   <div class="card card-pad">
     <div class="card-hdr" style="margin-bottom:12px">
       <span class="section-kicker">Tasks</span><h4>任务看板</h4>
+      <button class="btn-ghost btn-small" id="dash-rollover-btn" style="margin-left:auto;font-size:11px" title="把所有过期未完成任务移到今天">↩ 立即顺延</button>
     </div>
     <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap" id="taskboard-tabs">
       <button class="unit-tab active" data-tb="today">今日</button>
@@ -1858,6 +1865,21 @@ function bindDashboardEvents(el){
     const msg = el.querySelector("#dash-exam-msg");
     if(msg) { msg.textContent = "✓ 已保存"; setTimeout(()=>msg.textContent="",2000); }
     popover.style.display = "none";
+  });
+
+  /* ── 立即顺延按钮 ── */
+  el.querySelector("#dash-rollover-btn")?.addEventListener("click", () => {
+    applyAutoRolloverIfNeeded(true);
+    const msg = autoRolloverNotice || "没有过期任务";
+    autoRolloverNotice = "";
+    renderTodayTasks(); renderHeatmap(); renderProfileCard();
+    if(dashActiveTab === "today") renderView();
+    const btn = el.querySelector("#dash-rollover-btn");
+    if(btn){
+      btn.textContent = msg;
+      btn.disabled = true;
+      setTimeout(() => { btn.textContent = "↩ 立即顺延"; btn.disabled = false; }, 3000);
+    }
   });
 
   /* ── Taskboard tabs ── */
