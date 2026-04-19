@@ -2977,40 +2977,35 @@ function renderExercises(unit){
       </div>
     </div>`;
 
-    // 连线匹配专属渲染
+    // 连线匹配专属渲染（可交互选择）
     if(ex.type === "连线匹配" || ex.type === "问候匹配"){
       const items = ex.items || [];
-      // 从 ex.options 取选项，否则从 answers 提取并排序
       const options = ex.options ||
         [...new Set(items.map(it => it.answer))].sort((a,b)=>a.localeCompare(b));
-      const leftHtml = items.map((item, itemIndex) => `
-        <div style="display:flex;align-items:flex-end;gap:8px;margin-bottom:12px">
-          <span style="font-size:13px;flex:1;padding-bottom:3px">${esc(item.prompt)}</span>
-          <div style="border-bottom:1.5px solid #999;width:38px;flex-shrink:0"></div>
-        </div>`).join("");
-      const rightHtml = options.map(opt =>
-        `<div style="font-size:13px;padding:4px 0;border-bottom:1px solid #eee">${esc(opt)}</div>`
+      const optionTags = options.map(opt =>
+        `<option value="${esc(opt)}">${esc(opt)}</option>`
       ).join("");
-      const answersHtml = items.map((item,i) => `
-        <div style="font-size:12px;margin-bottom:5px">
-          <span style="color:#888">${esc(item.prompt.replace(/^[①②③④⑤⑥⑦⑧]/,"").trim())}：</span>
-          <b>${esc(item.answer)}</b>
-          ${item.explanation?`<span style="color:#888;margin-left:4px">— ${esc(item.explanation)}</span>`:""}
-        </div>`).join("");
+      const rowsHtml = items.map((item, itemIndex) => `
+        <li class="ex-item">
+          <p class="ex-prompt">${esc(item.prompt)}</p>
+          <div class="ex-grade-row" data-correct="${esc(item.answer)}">
+            <select class="grade-input" style="flex:1;max-width:280px;padding:4px 8px;border:1px solid var(--border);border-radius:4px;background:var(--bg-card);font-size:13px;cursor:pointer">
+              <option value="">请选择…</option>
+              ${optionTags}
+            </select>
+            <button class="grade-btn" data-eid="${esc(buildExerciseKey(unit.id, exIndex, itemIndex))}" data-prompt="${esc(item.prompt)}" data-correct="${esc(item.answer)}">提交</button>
+            <span class="grade-result"></span>
+          </div>
+          <details class="ex-answer-box" style="margin-top:4px">
+            <summary>查看答案</summary>
+            <span class="ex-answer">${esc(item.answer)}</span>
+            ${item.explanation?`<p class="ex-explain">${esc(item.explanation)}</p>`:""}
+          </details>
+        </li>`).join("");
       return `<div class="ex-block">
         <span class="ex-type">${esc(ex.type)}</span>
         <p class="ex-instruction">${esc(ex.instruction)}</p>
-        <div style="display:flex;gap:20px;align-items:flex-start;margin-top:8px">
-          <div style="flex:3">${leftHtml}</div>
-          <div style="flex:1;background:#f5f7fa;border-radius:6px;padding:10px 14px;min-width:130px">
-            <div style="font-size:11px;font-weight:600;color:#888;letter-spacing:.5px;margin-bottom:6px">选 项</div>
-            ${rightHtml}
-          </div>
-        </div>
-        <details class="ex-answer-box" style="margin-top:12px">
-          <summary>查看答案与解析</summary>
-          <div style="padding:6px 0">${answersHtml}</div>
-        </details>
+        <ol class="ex-list">${rowsHtml}</ol>
       </div>`;
     }
 
