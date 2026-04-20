@@ -979,16 +979,288 @@ window.siteData = {
             title: "Qu’est-ce qu’on mange ?",
             focus: "食物、点餐、价格、数量、餐馆场景",
             lecture: {
-              summary: "这一单元非常实用，和听力里的生活场景重合度很高。",
-              canDo: ["点餐、询价", "表达想吃什么", "理解简单菜单"],
-              grammar: ["部分冠词", "数量表达", "aller / faire / acheter"],
-              vocabulary: ["aliments, boissons, dessert", "restaurant, serveur, addition", "un peu de, beaucoup de"],
-              tcf: "适合价格、菜单、日常消费类听读。"
+              summary: "这一单元从‘会认菜单’升级到‘能完成一次点餐’。你会系统掌握部分冠词、数量表达和餐馆高频句型，不再只会背单词，而是能在真实场景里说出完整句子。学完后你可以处理最常见的餐饮沟通：点主食、点饮料、问价格、要账单。",
+              canDo: [
+                "看懂菜单里的基础食物和饮料词",
+                "用 Je voudrais / Je prends 完成简单点餐",
+                "正确使用 du / de la / de l' / des 表达‘吃/喝一些’",
+                "在否定句里把冠词改为 de / d'",
+                "用 un peu de / beaucoup de / un kilo de 表达数量",
+                "在餐馆场景里询价、确认和礼貌结束对话"
+              ],
+              grammarSections: [
+                {
+                  title: "部分冠词：du / de la / de l' / des",
+                  explanation: "当你表达‘吃一些、喝一些’时，法语通常用部分冠词。它不强调具体数量，而是表示‘一部分’。名词的性数和首字母决定你要选哪一种形式。",
+                  table: [
+                    ["名词类型", "冠词", "例子"],
+                    ["阳性单数", "du", "du pain"],
+                    ["阴性单数", "de la", "de la soupe"],
+                    ["元音或哑音 h 开头", "de l'", "de l'eau"],
+                    ["复数", "des", "des légumes"]
+                  ],
+                  examples: [
+                    { fr: "Je prends du café et de la salade.", zh: "我要咖啡和沙拉。" },
+                    { fr: "Il boit de l'eau.", zh: "他喝水。" },
+                    { fr: "Nous achetons des fruits.", zh: "我们买一些水果。" },
+                    { fr: "Tu manges du riz ce soir ?", zh: "你今晚吃米饭吗？" }
+                  ],
+                  pitfall: "中文里常直接说‘我喝水’，但法语不能写 Je bois eau，必须加冠词：Je bois de l'eau。"
+                },
+                {
+                  title: "否定句里的 de / d'",
+                  explanation: "很多名词在否定句里会把 du / de la / de l' / des 统一改成 de 或 d'。记忆方式很简单：ne...pas 包起来后，名词前优先想 de。",
+                  table: [
+                    ["肯定句", "否定句", "变化"],
+                    ["Je prends du café.", "Je ne prends pas de café.", "du → de"],
+                    ["Elle boit de la soupe.", "Elle ne boit pas de soupe.", "de la → de"],
+                    ["Il boit de l'eau.", "Il ne boit pas d'eau.", "de l' → d'"],
+                    ["Nous achetons des fruits.", "Nous n'achetons pas de fruits.", "des → de"]
+                  ],
+                  examples: [
+                    { fr: "Je veux du dessert, mais je ne veux pas de sucre.", zh: "我想要甜点，但我不想要糖。" },
+                    { fr: "Elle prend de l'eau, elle ne prend pas d'alcool.", zh: "她喝水，不喝酒。" },
+                    { fr: "Ils mangent des pâtes, ils ne mangent pas de pain.", zh: "他们吃意面，不吃面包。" }
+                  ],
+                  pitfall: "最常见错误是把否定句还写成 du/de la/des。看到 ne...pas，就先检查名词前是不是 de/d'。"
+                },
+                {
+                  title: "数量表达：un peu de / beaucoup de / un kilo de",
+                  explanation: "只要前面出现数量或程度表达，后面通常都接 de + 名词。这个规则比背词更重要，因为它在购物、点餐、描述饮食习惯时反复出现。",
+                  table: [
+                    ["表达", "中文", "例子"],
+                    ["un peu de", "一点", "un peu de fromage"],
+                    ["beaucoup de", "很多", "beaucoup de légumes"],
+                    ["un kilo de", "一公斤", "un kilo de pommes"],
+                    ["une bouteille de", "一瓶", "une bouteille de jus"],
+                    ["un verre de", "一杯", "un verre d'eau"]
+                  ],
+                  examples: [
+                    { fr: "Je prends un peu de riz.", zh: "我要一点米饭。" },
+                    { fr: "Nous achetons beaucoup de fruits.", zh: "我们买很多水果。" },
+                    { fr: "Il veut une bouteille de jus d'orange.", zh: "他想要一瓶橙汁。" }
+                  ],
+                  pitfall: "不要写 beaucoup du pain、un kilo des tomates。数量表达后统一用 de。"
+                },
+                {
+                  title: "点餐核心句型：Je voudrais / Je prends / C'est combien ?",
+                  explanation: "餐馆里最实用的是固定句型。A1 阶段先把礼貌、清晰、能完成任务放在第一位，不追求复杂句。先会这几句，真实场景就够用了。",
+                  table: [
+                    ["功能", "法语表达", "说明"],
+                    ["礼貌点单", "Je voudrais...", "比 Je veux 更礼貌"],
+                    ["直接下单", "Je prends...", "口语很常见"],
+                    ["询问价格", "C'est combien ?", "最常用问价句"],
+                    ["请求账单", "L'addition, s'il vous plaît.", "结账高频句"],
+                    ["表达不要", "Je ne prends pas...", "否定点单"]
+                  ],
+                  examples: [
+                    { fr: "Bonjour, je voudrais un café et un croissant, s'il vous plaît.", zh: "您好，我想要一杯咖啡和一个可颂，谢谢。" },
+                    { fr: "Je prends le menu du jour.", zh: "我要今日套餐。" },
+                    { fr: "C'est combien ?", zh: "这个多少钱？" },
+                    { fr: "L'addition, s'il vous plaît.", zh: "请给我账单。" }
+                  ],
+                  pitfall: "点餐时一直用 Je veux 会显得太直接，考试和真实场景都更推荐 Je voudrais。"
+                }
+              ],
+              vocabularyGroups: [
+                {
+                  theme: "主食与常见食物",
+                  words: [
+                    { fr: "le pain", zh: "面包", example: "Je mange du pain le matin.", exampleZh: "我早上吃面包。" },
+                    { fr: "le riz", zh: "米饭", example: "Il prend du riz et du poulet.", exampleZh: "他吃米饭和鸡肉。" },
+                    { fr: "les pâtes (f.)", zh: "意面", example: "Nous aimons les pâtes.", exampleZh: "我们喜欢意面。" },
+                    { fr: "le poulet", zh: "鸡肉", example: "Elle ne mange pas de poulet.", exampleZh: "她不吃鸡肉。" },
+                    { fr: "le poisson", zh: "鱼", example: "Je prends du poisson ce soir.", exampleZh: "我今晚点鱼。" },
+                    { fr: "la soupe", zh: "汤", example: "Tu veux de la soupe ?", exampleZh: "你想要汤吗？" },
+                    { fr: "la salade", zh: "沙拉", example: "Je prends une salade.", exampleZh: "我要一份沙拉。" },
+                    { fr: "le fromage", zh: "奶酪", example: "Il y a du fromage dans la salade.", exampleZh: "沙拉里有奶酪。" }
+                  ]
+                },
+                {
+                  theme: "饮料与甜点",
+                  words: [
+                    { fr: "le café", zh: "咖啡", example: "Je voudrais un café.", exampleZh: "我想要一杯咖啡。" },
+                    { fr: "le thé", zh: "茶", example: "Elle boit du thé.", exampleZh: "她喝茶。" },
+                    { fr: "l'eau (f.)", zh: "水", example: "Donnez-moi de l'eau, s'il vous plaît.", exampleZh: "请给我一点水。" },
+                    { fr: "le jus d'orange", zh: "橙汁", example: "Je prends un jus d'orange.", exampleZh: "我要一杯橙汁。" },
+                    { fr: "le lait", zh: "牛奶", example: "Il boit du lait.", exampleZh: "他喝牛奶。" },
+                    { fr: "le dessert", zh: "甜点", example: "Nous prenons un dessert.", exampleZh: "我们要一份甜点。" },
+                    { fr: "le gâteau", zh: "蛋糕", example: "Tu aimes le gâteau au chocolat ?", exampleZh: "你喜欢巧克力蛋糕吗？" },
+                    { fr: "la glace", zh: "冰淇淋", example: "En été, elle mange de la glace.", exampleZh: "夏天她吃冰淇淋。" }
+                  ]
+                },
+                {
+                  theme: "餐馆场景词汇",
+                  words: [
+                    { fr: "le restaurant", zh: "餐馆", example: "On va au restaurant ce soir.", exampleZh: "我们今晚去餐馆。" },
+                    { fr: "le café", zh: "咖啡馆", example: "Le café est près de la gare.", exampleZh: "这家咖啡馆在火车站附近。" },
+                    { fr: "le serveur / la serveuse", zh: "服务员", example: "Le serveur apporte la carte.", exampleZh: "服务员拿来了菜单。" },
+                    { fr: "la carte", zh: "菜单", example: "Je lis la carte.", exampleZh: "我在看菜单。" },
+                    { fr: "le menu", zh: "套餐/菜单", example: "Je prends le menu du jour.", exampleZh: "我要今日套餐。" },
+                    { fr: "le plat", zh: "菜品", example: "Ce plat est très bon.", exampleZh: "这道菜很好吃。" },
+                    { fr: "l'addition (f.)", zh: "账单", example: "L'addition, s'il vous plaît.", exampleZh: "请给我账单。" },
+                    { fr: "la réservation", zh: "预订", example: "J'ai une réservation pour deux personnes.", exampleZh: "我订了两个人的位置。" }
+                  ]
+                },
+                {
+                  theme: "数量与购买表达",
+                  words: [
+                    { fr: "un peu de", zh: "一点", example: "Je veux un peu de sucre.", exampleZh: "我想要一点糖。" },
+                    { fr: "beaucoup de", zh: "很多", example: "Il mange beaucoup de légumes.", exampleZh: "他吃很多蔬菜。" },
+                    { fr: "un kilo de", zh: "一公斤", example: "Je prends un kilo de tomates.", exampleZh: "我要一公斤西红柿。" },
+                    { fr: "une bouteille de", zh: "一瓶", example: "Nous achetons une bouteille d'eau.", exampleZh: "我们买一瓶水。" },
+                    { fr: "un verre de", zh: "一杯", example: "Je prends un verre de jus.", exampleZh: "我要一杯果汁。" },
+                    { fr: "combien", zh: "多少/多少钱", example: "C'est combien ?", exampleZh: "这个多少钱？" },
+                    { fr: "coûter", zh: "花费/价值", example: "Ce plat coûte 12 euros.", exampleZh: "这道菜12欧元。" },
+                    { fr: "payer", zh: "付款", example: "Je paie par carte.", exampleZh: "我刷卡付款。" }
+                  ]
+                }
+              ],
+              dictation: {
+                intro: "本单元默写重点：食物饮料词、部分冠词、数量表达、点餐句型。",
+                groups: [
+                  {
+                    title: "核心词汇默写：食物与饮料",
+                    type: "vocab",
+                    items: [
+                      { prompt: "面包", answer: "le pain", hint: "阳性" },
+                      { prompt: "米饭", answer: "le riz", hint: "阳性" },
+                      { prompt: "沙拉", answer: "la salade", hint: "阴性" },
+                      { prompt: "汤", answer: "la soupe", hint: "阴性" },
+                      { prompt: "奶酪", answer: "le fromage", hint: "阳性" },
+                      { prompt: "咖啡", answer: "le café", hint: "阳性" },
+                      { prompt: "茶", answer: "le thé", hint: "阳性" },
+                      { prompt: "水", answer: "l'eau (f.)", hint: "元音开头" },
+                      { prompt: "橙汁", answer: "le jus d'orange", hint: "de + 水果" },
+                      { prompt: "账单", answer: "l'addition (f.)", hint: "点餐高频" }
+                    ]
+                  },
+                  {
+                    title: "部分冠词默写",
+                    type: "vocab",
+                    items: [
+                      { prompt: "一些面包", answer: "du pain", hint: "阳性单数" },
+                      { prompt: "一些汤", answer: "de la soupe", hint: "阴性单数" },
+                      { prompt: "一些水", answer: "de l'eau", hint: "元音开头" },
+                      { prompt: "一些蔬菜", answer: "des légumes", hint: "复数" },
+                      { prompt: "我不要咖啡", answer: "je ne prends pas de café", hint: "否定用 de" },
+                      { prompt: "她不喝水", answer: "elle ne boit pas d'eau", hint: "de → d'" }
+                    ]
+                  },
+                  {
+                    title: "数量表达默写",
+                    type: "phrases",
+                    items: [
+                      { prompt: "一点奶酪", answer: "un peu de fromage", hint: "数量后用 de" },
+                      { prompt: "很多水果", answer: "beaucoup de fruits", hint: "固定搭配" },
+                      { prompt: "一公斤西红柿", answer: "un kilo de tomates", hint: "kilo de" },
+                      { prompt: "一瓶水", answer: "une bouteille d'eau", hint: "de + 元音" },
+                      { prompt: "一杯橙汁", answer: "un verre de jus d'orange", hint: "verre de" },
+                      { prompt: "我想要一点米饭", answer: "Je voudrais un peu de riz.", hint: "voudrais 更礼貌" }
+                    ]
+                  },
+                  {
+                    title: "点餐句型默写",
+                    type: "phrases",
+                    items: [
+                      { prompt: "我想要一杯咖啡。", answer: "Je voudrais un café.", hint: "礼貌点单" },
+                      { prompt: "我要今日套餐。", answer: "Je prends le menu du jour.", hint: "prendre" },
+                      { prompt: "这个多少钱？", answer: "C'est combien ?", hint: "问价" },
+                      { prompt: "请给我账单。", answer: "L'addition, s'il vous plaît.", hint: "结账" },
+                      { prompt: "我不想要甜点。", answer: "Je ne prends pas de dessert.", hint: "否定用 de" },
+                      { prompt: "我要两杯茶。", answer: "Je prends deux thés.", hint: "复数" }
+                    ]
+                  }
+                ]
+              },
+              phonetique: "本单元重点发音：1）de l'eau、d'orange 这类缩合要连读顺；2）café、thé、riz 词尾发音与拼写不总一致；3）餐馆里说句子时保持节奏组，不要一个词一个词断开。建议把 Je voudrais... / L'addition... 作为固定语块整句跟读。",
+              tcf: "TCF Canada 听力里，餐馆和消费场景是高频：点单、问价、结账、偏好表达都会出现。阅读里常见菜单和短公告，重点是快速识别食物词、价格数字和否定信息（不要什么）。"
             },
             exercises: [
-              { type: "填空", prompt: "Je prends _____ café et _____ croissant.", answer: "un / un" },
-              { type: "改错", prompt: "Corrigez : Je voudrais de eau.", answer: "Je voudrais de l'eau." },
-              { type: "表达", prompt: "写一段在咖啡馆点单的 3 句对话。", answer: "示例含 Je voudrais..., C'est combien ?, Merci." }
+              {
+                type: "冠词填空",
+                instruction: "根据名词性数与首字母，填入 du / de la / de l' / des。",
+                items: [
+                  { prompt: "Je prends _____ pain et _____ soupe.", answer: "du / de la", explanation: "pain 阳性单数用 du；soupe 阴性单数用 de la。" },
+                  { prompt: "Elle boit _____ eau et il mange _____ légumes.", answer: "de l' / des", explanation: "eau 元音开头用 de l'；légumes 复数用 des。" },
+                  { prompt: "Nous achetons _____ fromage et _____ fruits.", answer: "du / des", explanation: "fromage 阳性单数；fruits 复数。" },
+                  { prompt: "Tu veux _____ salade ou _____ riz ?", answer: "de la / du", explanation: "salade 阴性；riz 阳性。" },
+                  { prompt: "Ils commandent _____ jus d'orange.", answer: "du", explanation: "jus 阳性单数，用 du。" }
+                ]
+              },
+              {
+                type: "数量表达填空",
+                instruction: "选择最合适的数量表达填空：un peu de / beaucoup de / un kilo de / une bouteille de / un verre de。",
+                items: [
+                  { prompt: "Je prends _____ tomates pour la salade.", answer: "un kilo de", explanation: "表示重量用 un kilo de。" },
+                  { prompt: "Elle boit _____ eau après le sport.", answer: "un verre d'eau", explanation: "un verre de + eau 写作 d'eau。" },
+                  { prompt: "Nous voulons _____ légumes, pas seulement deux carottes.", answer: "beaucoup de", explanation: "表示数量很多用 beaucoup de。" },
+                  { prompt: "Il met _____ sucre dans le café.", answer: "un peu de", explanation: "表示一点点用 un peu de。" },
+                  { prompt: "Je commande _____ jus d'orange pour la table.", answer: "une bouteille de", explanation: "表示一整瓶饮料用 une bouteille de。" }
+                ]
+              },
+              {
+                type: "改错题",
+                instruction: "找出句子中的错误并改正，说明原因。",
+                items: [
+                  { prompt: "Je voudrais de eau.", answer: "Je voudrais de l'eau.", explanation: "eau 元音开头，de + l'。" },
+                  { prompt: "Je ne prends pas du café.", answer: "Je ne prends pas de café.", explanation: "否定句里 du 变 de。" },
+                  { prompt: "Nous achetons beaucoup du pain.", answer: "Nous achetons beaucoup de pain.", explanation: "数量表达后统一用 de。" },
+                  { prompt: "L'addition je voudrais.", answer: "Je voudrais l'addition.", explanation: "法语陈述句一般主语在前。" },
+                  { prompt: "Il boit des eau.", answer: "Il boit de l'eau.", explanation: "eau 不可数，常用 de l'eau。" }
+                ]
+              },
+              {
+                type: "连线匹配",
+                instruction: "把左列情境和右列最合适的表达连线（选择对应选项）。",
+                options: [
+                  "a. Je voudrais un café, s'il vous plaît.",
+                  "b. C'est combien ?",
+                  "c. L'addition, s'il vous plaît.",
+                  "d. Je ne prends pas de dessert."
+                ],
+                items: [
+                  { prompt: "① 你准备礼貌地点一杯咖啡", answer: "a. Je voudrais un café, s'il vous plaît.", explanation: "礼貌点单首选 Je voudrais..." },
+                  { prompt: "② 你想问这道菜多少钱", answer: "b. C'est combien ?", explanation: "最常用问价句。" },
+                  { prompt: "③ 吃完准备结账", answer: "c. L'addition, s'il vous plaît.", explanation: "固定结账表达。" },
+                  { prompt: "④ 你明确表示不要甜点", answer: "d. Je ne prends pas de dessert.", explanation: "否定点单，dessert 前用 de。" }
+                ]
+              },
+              {
+                type: "语法填空",
+                instruction: "阅读下面的点餐对话，在每个空格填入最恰当的词（冠词、数量表达或动词形式）。",
+                passage: "Au café: Bonjour, je (1)_____ un café et un croissant, s'il vous plaît. Je prends aussi (2)_____ eau. — D'accord. Vous voulez (3)_____ dessert ? — Non, je ne prends pas (4)_____ dessert. — Très bien. Et pour votre amie ? — Elle veut (5)_____ soupe et (6)_____ salade. — Vous prenez (7)_____ sucre avec le café ? — Oui, un peu (8)_____. — Voilà. (9)_____ ? — Oui, c'est combien ? — Ça fait 14 euros. — Merci, et (10)_____, s'il vous plaît.",
+                items: [
+                  { blank: 1, answer: "voudrais", explanation: "礼貌点单常用 Je voudrais。" },
+                  { blank: 2, answer: "de l'", explanation: "eau 元音开头，用 de l'。" },
+                  { blank: 3, answer: "un", explanation: "dessert 可数单数，点一个用 un。" },
+                  { blank: 4, answer: "de", explanation: "否定句里名词前用 de。" },
+                  { blank: 5, answer: "de la", explanation: "soupe 阴性单数，用 de la。" },
+                  { blank: 6, answer: "une", explanation: "salade 可数单数，点一份用 une。" },
+                  { blank: 7, answer: "du", explanation: "sucre 阳性单数，用 du。" },
+                  { blank: 8, answer: "de sucre", explanation: "un peu de + 名词。" },
+                  { blank: 9, answer: "C'est tout", explanation: "服务场景里常用 C'est tout ? = 就这些吗？" },
+                  { blank: 10, answer: "l'addition", explanation: "结账固定表达：l'addition, s'il vous plaît。" }
+                ]
+              },
+              {
+                type: "表达练习",
+                instruction: "根据场景写 40-60 个词的点餐对话，至少包含：1种主食、1种饮料、1次问价、1次结账表达。",
+                items: [
+                  {
+                    prompt: "你和朋友在咖啡馆点餐，请写一段简短对话（40-60词）。",
+                    modelAnswer: "Bonjour, je voudrais un café et une salade, s'il vous plaît. Mon amie prend un jus d'orange et un croissant. Nous ne prenons pas de dessert. C'est combien pour tout ? D'accord, merci. L'addition, s'il vous plaît.",
+                    keyPoints: [
+                      "使用 Je voudrais / Je prends 完成点单",
+                      "食物前冠词正确（une salade, un croissant）",
+                      "否定句用 de（pas de dessert）",
+                      "包含问价句 C'est combien ?",
+                      "包含结账句 L'addition, s'il vous plaît",
+                      "整体长度控制在 40-60 词"
+                    ]
+                  }
+                ]
+              }
             ]
           },
           {
@@ -997,16 +1269,290 @@ window.siteData = {
             title: "C’est où ?",
             focus: "城市、方位、交通、问路指路、路线理解",
             lecture: {
-              summary: "问路和看路线是 TCF Canada 听阅很典型的任务场景。",
-              canDo: ["问地点在哪儿", "理解路线指令", "说交通方式"],
-              grammar: ["命令式基础", "地点介词", "频率副词"],
-              vocabulary: ["à gauche, à droite, tout droit", "métro, bus, gare", "quartier, monument"],
-              tcf: "适合路线类听力和城市信息类阅读。"
+              summary: "这一单元解决一个真实高频任务：问路和指路。你会把‘地点词’和‘动作词’组合成完整路线句，不再只会说左和右。学完后你可以在地铁站、街区、商场等场景里问清目的地并给出基础路线说明。",
+              canDo: [
+                "用 Où est... ? / C'est où ? 提问地点",
+                "用 à gauche de / en face de / près de 等表达位置关系",
+                "用 Allez / Tournez / Prenez 给出基础路线指令",
+                "描述常见交通方式（à pied / en bus / en métro）",
+                "听懂并复述两到三步的路线说明",
+                "完成 TCF 常见的城市路线类听读任务"
+              ],
+              grammarSections: [
+                {
+                  title: "地点介词与方位短语",
+                  explanation: "问路题最核心是位置关系。法语里不是只背单词，而是要背‘介词短语’：à gauche de、en face de、près de 等。先掌握这组固定搭配，路线句就能快速拼出来。",
+                  table: [
+                    ["表达", "中文", "例句"],
+                    ["à gauche de", "在……左边", "La banque est à gauche de la poste."],
+                    ["à droite de", "在……右边", "Le café est à droite de la gare."],
+                    ["en face de", "在……对面", "La pharmacie est en face du parc."],
+                    ["près de", "在……附近", "Le musée est près de la station."],
+                    ["loin de", "离……远", "Le supermarché est loin d'ici."],
+                    ["entre ... et ...", "在……和……之间", "La mairie est entre la banque et l'école."]
+                  ],
+                  examples: [
+                    { fr: "La gare est en face de l'hôpital.", zh: "火车站在医院对面。" },
+                    { fr: "Le musée est près de la rivière.", zh: "博物馆在河边附近。" },
+                    { fr: "La boulangerie est à droite de la pharmacie.", zh: "面包店在药店右边。" }
+                  ],
+                  pitfall: "不要把汉语直译成 en gauche / en droite。法语固定说法是 à gauche / à droite。"
+                },
+                {
+                  title: "问路高频句型：Où est... ? / Comment aller à... ?",
+                  explanation: "问路时你需要先发问，再确认信息。A1 阶段先掌握三类句：问地点、问路线、问距离。句子短但非常高频，听力和口语都会反复出现。",
+                  table: [
+                    ["功能", "法语表达", "场景"],
+                    ["问地点", "Où est la gare ?", "找具体地点"],
+                    ["口语问法", "C'est où, le musée ?", "更口语"],
+                    ["问怎么去", "Comment aller à la poste ?", "问路线"],
+                    ["问远近", "C'est loin ?", "确认距离"],
+                    ["确认是否正确", "C'est bien ici ?", "二次确认"]
+                  ],
+                  examples: [
+                    { fr: "Excusez-moi, où est la station de métro ?", zh: "打扰一下，地铁站在哪里？" },
+                    { fr: "Comment aller à la bibliothèque, s'il vous plaît ?", zh: "请问去图书馆怎么走？" },
+                    { fr: "C'est loin d'ici ?", zh: "离这里远吗？" }
+                  ],
+                  pitfall: "问路对陌生人优先用 vous 场景（Excusez-moi, s'il vous plaît），不要一上来用 tu。"
+                },
+                {
+                  title: "命令式指路：Allez / Tournez / Prenez",
+                  explanation: "给路线时最常见的是命令式。你可以把它理解成‘导航语气’：直走、左转、坐地铁。A1 先掌握 vous 形式最实用，因为问路对象多为陌生人。",
+                  table: [
+                    ["动词原形", "vous 命令式", "例句"],
+                    ["aller", "allez", "Allez tout droit."],
+                    ["tourner", "tournez", "Tournez à gauche."],
+                    ["prendre", "prenez", "Prenez la ligne 1."],
+                    ["continuer", "continuez", "Continuez jusqu'au carrefour."],
+                    ["traverser", "traversez", "Traversez la rue."]
+                  ],
+                  examples: [
+                    { fr: "Allez tout droit, puis tournez à droite.", zh: "一直走，然后右转。" },
+                    { fr: "Prenez le métro ligne 2.", zh: "乘坐2号地铁线。" },
+                    { fr: "Traversez le pont et continuez tout droit.", zh: "过桥后继续直走。" }
+                  ],
+                  pitfall: "命令式是‘指令’，和直陈式不同：Vous tournez（你们在转弯）≠ Tournez（请转弯）。"
+                },
+                {
+                  title: "交通方式表达：à pied / en bus / en métro / en voiture",
+                  explanation: "说路线时常要补充交通方式。最常用规则：步行用 à pied；其他常见交通工具多用 en + 名词。把这个规则和路线动词合起来，就能组成完整指路句。",
+                  table: [
+                    ["方式", "法语", "例句"],
+                    ["步行", "à pied", "On va à pied."],
+                    ["公交", "en bus", "Vous allez en bus."],
+                    ["地铁", "en métro", "Je vais en métro."],
+                    ["汽车", "en voiture", "Il vient en voiture."],
+                    ["自行车", "à vélo", "Elle va à vélo."]
+                  ],
+                  examples: [
+                    { fr: "La gare est proche, vous pouvez y aller à pied.", zh: "火车站很近，您可以步行去。" },
+                    { fr: "Pour le centre-ville, prenez le bus 12.", zh: "去市中心请坐12路公交。" },
+                    { fr: "Je vais au travail en métro.", zh: "我坐地铁上班。" }
+                  ],
+                  pitfall: "不要把所有交通方式都套成 à。常见搭配是 en bus/en métro/en voiture，只有 à pied/à vélo 是 à。"
+                }
+              ],
+              vocabularyGroups: [
+                {
+                  theme: "方位与路线词",
+                  words: [
+                    { fr: "à gauche", zh: "向左/在左边", example: "Tournez à gauche au feu.", exampleZh: "到红绿灯处左转。" },
+                    { fr: "à droite", zh: "向右/在右边", example: "La poste est à droite.", exampleZh: "邮局在右边。" },
+                    { fr: "tout droit", zh: "一直走", example: "Allez tout droit pendant 5 minutes.", exampleZh: "一直直走5分钟。" },
+                    { fr: "en face de", zh: "在……对面", example: "Le café est en face de la gare.", exampleZh: "咖啡馆在火车站对面。" },
+                    { fr: "près de", zh: "在……附近", example: "J'habite près du parc.", exampleZh: "我住在公园附近。" },
+                    { fr: "loin de", zh: "离……远", example: "L'école est loin d'ici.", exampleZh: "学校离这里很远。" },
+                    { fr: "entre ... et ...", zh: "在……和……之间", example: "La banque est entre la poste et la mairie.", exampleZh: "银行在邮局和市政厅之间。" },
+                    { fr: "au coin de", zh: "在……拐角", example: "La boulangerie est au coin de la rue.", exampleZh: "面包店在街角。" }
+                  ]
+                },
+                {
+                  theme: "城市常见地点",
+                  words: [
+                    { fr: "la gare", zh: "火车站", example: "La gare est près d'ici.", exampleZh: "火车站离这里很近。" },
+                    { fr: "la station de métro", zh: "地铁站", example: "Où est la station de métro ?", exampleZh: "地铁站在哪里？" },
+                    { fr: "la poste", zh: "邮局", example: "Je vais à la poste.", exampleZh: "我去邮局。" },
+                    { fr: "la banque", zh: "银行", example: "La banque ouvre à neuf heures.", exampleZh: "银行九点开门。" },
+                    { fr: "la pharmacie", zh: "药店", example: "La pharmacie est en face du musée.", exampleZh: "药店在博物馆对面。" },
+                    { fr: "le musée", zh: "博物馆", example: "Le musée est à gauche de l'hôtel.", exampleZh: "博物馆在酒店左边。" },
+                    { fr: "l'hôpital (m.)", zh: "医院", example: "L'hôpital est loin du centre.", exampleZh: "医院离市中心很远。" },
+                    { fr: "le supermarché", zh: "超市", example: "Le supermarché est près de la mairie.", exampleZh: "超市在市政厅附近。" }
+                  ]
+                },
+                {
+                  theme: "交通方式",
+                  words: [
+                    { fr: "le bus", zh: "公交车", example: "Prenez le bus 7.", exampleZh: "请坐7路公交车。" },
+                    { fr: "le métro", zh: "地铁", example: "Je vais en métro.", exampleZh: "我坐地铁去。" },
+                    { fr: "le taxi", zh: "出租车", example: "On prend un taxi ?", exampleZh: "我们打车吗？" },
+                    { fr: "la voiture", zh: "汽车", example: "Ils viennent en voiture.", exampleZh: "他们开车来。" },
+                    { fr: "le vélo", zh: "自行车", example: "Elle va au travail à vélo.", exampleZh: "她骑自行车去上班。" },
+                    { fr: "à pied", zh: "步行", example: "C'est près, allez-y à pied.", exampleZh: "很近，走路去吧。" },
+                    { fr: "la ligne", zh: "线路", example: "Prenez la ligne 1.", exampleZh: "请坐1号线。" },
+                    { fr: "l'arrêt (m.)", zh: "站点", example: "Descendez à cet arrêt.", exampleZh: "请在这一站下车。" }
+                  ]
+                },
+                {
+                  theme: "问路与指路常用表达",
+                  words: [
+                    { fr: "Où est ... ?", zh: "……在哪里？", example: "Où est la mairie ?", exampleZh: "市政厅在哪里？" },
+                    { fr: "C'est où ?", zh: "……在哪？", example: "C'est où, la gare ?", exampleZh: "火车站在哪儿？" },
+                    { fr: "Comment aller à ... ?", zh: "怎么去……？", example: "Comment aller au musée ?", exampleZh: "怎么去博物馆？" },
+                    { fr: "tourner", zh: "转弯", example: "Tournez à droite.", exampleZh: "右转。" },
+                    { fr: "prendre", zh: "乘坐/走（某路）", example: "Prenez la rue Victor-Hugo.", exampleZh: "走维克多·雨果街。" },
+                    { fr: "continuer", zh: "继续", example: "Continuez tout droit.", exampleZh: "继续直走。" },
+                    { fr: "traverser", zh: "穿过", example: "Traversez la rue.", exampleZh: "过马路。" },
+                    { fr: "jusqu'à", zh: "直到", example: "Allez jusqu'à la place centrale.", exampleZh: "一直走到中央广场。" }
+                  ]
+                }
+              ],
+              dictation: {
+                intro: "本单元默写重点：方位词、地点词、路线动词、问路指路句型。",
+                groups: [
+                  {
+                    title: "方位词默写",
+                    type: "vocab",
+                    items: [
+                      { prompt: "在左边", answer: "à gauche", hint: "固定搭配" },
+                      { prompt: "在右边", answer: "à droite", hint: "固定搭配" },
+                      { prompt: "一直走", answer: "tout droit", hint: "路线高频" },
+                      { prompt: "在……对面", answer: "en face de", hint: "介词短语" },
+                      { prompt: "在……附近", answer: "près de", hint: "介词短语" },
+                      { prompt: "离……远", answer: "loin de", hint: "介词短语" },
+                      { prompt: "在……和……之间", answer: "entre ... et ...", hint: "双对象" },
+                      { prompt: "在拐角处", answer: "au coin de", hint: "路线常见" }
+                    ]
+                  },
+                  {
+                    title: "地点词默写",
+                    type: "vocab",
+                    items: [
+                      { prompt: "火车站", answer: "la gare", hint: "阴性" },
+                      { prompt: "地铁站", answer: "la station de métro", hint: "阴性" },
+                      { prompt: "邮局", answer: "la poste", hint: "阴性" },
+                      { prompt: "银行", answer: "la banque", hint: "阴性" },
+                      { prompt: "药店", answer: "la pharmacie", hint: "阴性" },
+                      { prompt: "博物馆", answer: "le musée", hint: "阳性" },
+                      { prompt: "医院", answer: "l'hôpital (m.)", hint: "元音开头" },
+                      { prompt: "超市", answer: "le supermarché", hint: "阳性" }
+                    ]
+                  },
+                  {
+                    title: "路线动词默写（命令式）",
+                    type: "conjugation",
+                    items: [
+                      { prompt: "vous + aller（命令式）", answer: "allez", hint: "导航高频" },
+                      { prompt: "vous + tourner（命令式）", answer: "tournez", hint: "加 -ez" },
+                      { prompt: "vous + prendre（命令式）", answer: "prenez", hint: "不规则词干" },
+                      { prompt: "vous + continuer（命令式）", answer: "continuez", hint: "加 -ez" },
+                      { prompt: "vous + traverser（命令式）", answer: "traversez", hint: "加 -ez" },
+                      { prompt: "tu + aller（命令式）", answer: "va", hint: "去掉 s" },
+                      { prompt: "nous + aller（命令式）", answer: "allons", hint: "一起走" }
+                    ]
+                  },
+                  {
+                    title: "问路与指路句型默写",
+                    type: "phrases",
+                    items: [
+                      { prompt: "请问，火车站在哪里？", answer: "Excusez-moi, où est la gare ?", hint: "礼貌开头" },
+                      { prompt: "请问怎么去博物馆？", answer: "Comment aller au musée, s'il vous plaît ?", hint: "au + 阳性" },
+                      { prompt: "一直走，然后左转。", answer: "Allez tout droit, puis tournez à gauche.", hint: "路线两步" },
+                      { prompt: "药店在邮局对面。", answer: "La pharmacie est en face de la poste.", hint: "en face de" },
+                      { prompt: "很近，你可以步行去。", answer: "C'est près, vous pouvez y aller à pied.", hint: "à pied" },
+                      { prompt: "请坐2号地铁线。", answer: "Prenez la ligne 2 de métro.", hint: "prendre + ligne" }
+                    ]
+                  }
+                ]
+              },
+              phonetique: "本单元重点发音：1）à droite、près de、en face de 的连读节奏；2）命令式结尾 -ez（allez、tournez、prenez）发音要稳定；3）地名和地点词常与介词连在一个节奏组里读，如 en face de la gare、près du musée。",
+              tcf: "TCF Canada 听力和阅读里，路线类任务通常信息密集：方向词、地点词、交通方式会同时出现。做题时先抓‘起点-动作-参照物-终点’四个信息点，能显著减少听漏和读漏。"
             },
             exercises: [
-              { type: "填空", prompt: "La banque est _____ droite de la poste.", answer: "à" },
-              { type: "选择", prompt: "“一直走”对应哪一句？ A. Tournez. B. Allez tout droit.", answer: "B. Allez tout droit." },
-              { type: "表达", prompt: "写两句给别人指路。", answer: "示例：Prenez le bus. Tournez à gauche." }
+              {
+                type: "介词填空",
+                instruction: "选择正确表达填空：à gauche de / à droite de / en face de / près de / entre ... et ...。",
+                items: [
+                  { prompt: "La banque est _____ la poste.", answer: "à gauche de", explanation: "表示位置‘在左边’用 à gauche de。" },
+                  { prompt: "Le musée est _____ l'hôpital.", answer: "en face de", explanation: "表示‘在对面’用 en face de。" },
+                  { prompt: "La pharmacie est _____ la gare.", answer: "près de", explanation: "表示‘在附近’用 près de。" },
+                  { prompt: "La mairie est _____ la banque _____ l'école.", answer: "entre / et", explanation: "在两者之间用 entre...et...。" },
+                  { prompt: "Le café est _____ la station de métro.", answer: "à droite de", explanation: "表示‘在右边’用 à droite de。" }
+                ]
+              },
+              {
+                type: "命令式变形",
+                instruction: "根据提示，把动词改成合适的命令式形式。",
+                items: [
+                  { prompt: "(vous / aller) _____ tout droit.", answer: "Allez", explanation: "vous 命令式：allez。" },
+                  { prompt: "(vous / tourner) _____ à gauche.", answer: "Tournez", explanation: "规则 -er 动词 vous 命令式常为 -ez。" },
+                  { prompt: "(vous / prendre) _____ la ligne 1.", answer: "Prenez", explanation: "prendre 的 vous 命令式是 prenez。" },
+                  { prompt: "(tu / aller) _____ jusqu'au feu.", answer: "Va", explanation: "tu 命令式 aller 是 va。" },
+                  { prompt: "(nous / continuer) _____ tout droit.", answer: "Continuons", explanation: "nous 命令式：continuons。" }
+                ]
+              },
+              {
+                type: "改错题",
+                instruction: "找出句子中的错误并改正，说明原因。",
+                items: [
+                  { prompt: "La gare est en gauche de la poste.", answer: "La gare est à gauche de la poste.", explanation: "固定搭配是 à gauche de，不是 en gauche。" },
+                  { prompt: "Prenez à pied le bus 8.", answer: "Prenez le bus 8.", explanation: "prendre le bus 已含交通方式；à pied 只用于步行。" },
+                  { prompt: "Tournez vous à droite.", answer: "Tournez à droite.", explanation: "命令式里不加主语 vous。" },
+                  { prompt: "Comment aller au la gare ?", answer: "Comment aller à la gare ?", explanation: "gare 阴性，用 à la。" },
+                  { prompt: "Le musée est près du la banque.", answer: "Le musée est près de la banque.", explanation: "près de + la banque，不能写 du la。" }
+                ]
+              },
+              {
+                type: "连线匹配",
+                instruction: "把左列情境和右列最合适的指路表达连线（选择对应选项）。",
+                options: [
+                  "a. Allez tout droit.",
+                  "b. Tournez à droite.",
+                  "c. Prenez la ligne 2.",
+                  "d. C'est en face de la gare."
+                ],
+                items: [
+                  { prompt: "① 对方问：‘第一步我该怎么走？’你让他直走", answer: "a. Allez tout droit.", explanation: "路线开头常用 Allez tout droit。" },
+                  { prompt: "② 到路口后你让他向右转", answer: "b. Tournez à droite.", explanation: "右转固定表达。" },
+                  { prompt: "③ 你建议他坐2号线地铁", answer: "c. Prenez la ligne 2.", explanation: "乘线路用 prenez la ligne..." },
+                  { prompt: "④ 你说明药店就在火车站对面", answer: "d. C'est en face de la gare.", explanation: "对面用 en face de。" }
+                ]
+              },
+              {
+                type: "语法填空",
+                instruction: "阅读下面问路对话，在每个空格填入最恰当的词（介词、命令式或地点词）。",
+                passage: "— Excusez-moi, où est (1)_____ gare ? — La gare ? Elle est (2)_____ face de la mairie. — C'est loin (3)_____ ? — Non, pas très loin. (4)_____ tout droit, puis (5)_____ à gauche au deuxième feu. — Je peux y aller (6)_____ pied ? — Oui, bien sûr. Sinon, vous pouvez (7)_____ le bus 4. — Et la pharmacie, c'est où ? — Elle est (8)_____ de la poste, juste (9)_____ la banque et le café. — Merci beaucoup ! — Je vous (10)_____.",
+                items: [
+                  { blank: 1, answer: "la", explanation: "gare 阴性单数，用 la gare。" },
+                  { blank: 2, answer: "en", explanation: "固定短语 en face de。" },
+                  { blank: 3, answer: "d'ici", explanation: "问距离常说 C'est loin d'ici ?" },
+                  { blank: 4, answer: "Allez", explanation: "给路线用命令式 Allez。" },
+                  { blank: 5, answer: "tournez", explanation: "vous 命令式：tournez。" },
+                  { blank: 6, answer: "à", explanation: "步行固定说法 à pied。" },
+                  { blank: 7, answer: "prendre", explanation: "pouvoir 后接动词原形。" },
+                  { blank: 8, answer: "près", explanation: "près de + 地点。" },
+                  { blank: 9, answer: "entre", explanation: "在两者之间用 entre...et...。" },
+                  { blank: 10, answer: "en prie", explanation: "Je vous en prie = 不客气。" }
+                ]
+              },
+              {
+                type: "表达练习",
+                instruction: "根据场景写 40-60 个词，给出一段清晰路线说明。至少包含：1个起点、2个路线动作、1个参照物、1种交通方式。",
+                items: [
+                  {
+                    prompt: "朋友在地铁站附近，想去博物馆。请你用法语写一段指路说明（40-60词）。",
+                    modelAnswer: "Le musée est près de la rivière. Depuis la station, allez tout droit pendant cinq minutes, puis tournez à gauche. Le musée est en face de la banque. Si vous êtes fatigué, prenez le bus 3 et descendez à l'arrêt Musée.",
+                    keyPoints: [
+                      "起点明确（Depuis la station）",
+                      "至少两个动作（allez, tournez, prenez）",
+                      "使用方位介词（en face de, près de）",
+                      "交通方式表达正确（en bus / prenez le bus）",
+                      "句子顺序清楚，便于执行",
+                      "整体长度控制在 40-60 词"
+                    ]
+                  }
+                ]
+              }
             ]
           },
           {
@@ -1015,16 +1561,301 @@ window.siteData = {
             title: "C’est tendance !",
             focus: "衣物、天气、物品描述、购物和实用表达",
             lecture: {
-              summary: "购物、天气、描述物品在口语和阅读里都很高频。",
-              canDo: ["描述衣物和颜色", "询问尺码", "谈论天气和简单计划"],
-              grammar: ["近未来时", "指示形容词", "形容词位置"],
-              vocabulary: ["vêtements, couleurs, météo", "chaud, froid, joli", "taille, pointure"],
-              tcf: "适合购物和天气类情景题。"
+              summary: "这一单元把‘会说衣服名词’升级为‘能在店里完成一次购物沟通’。你会系统掌握指示形容词、形容词位置与性数配合、近未来时，并把它们直接用在试穿、询价、描述天气穿搭等真实场景。学完后你可以清楚表达“我想买哪件、它合不合适、我接下来打算怎么穿”。",
+              canDo: [
+                "用 ce/cet/cette/ces 指向具体衣物",
+                "描述衣物颜色和基本外观（大小、新旧、风格）",
+                "在购物场景里询问尺码、价格和试穿",
+                "用 aller + 动词原形表达接下来要做的事",
+                "根据天气说明穿什么更合适",
+                "在 TCF 常见消费场景中快速抓取关键信息"
+              ],
+              grammarSections: [
+                {
+                  title: "指示形容词：ce / cet / cette / ces",
+                  explanation: "当你想说‘这个、这件、这些’时，用指示形容词。选哪个形式取决于名词的性数和首字母。记忆要点：阳性单数一般是 ce，但遇到元音或哑音 h 要用 cet。",
+                  table: [
+                    ["名词类型", "形式", "例子"],
+                    ["阳性单数", "ce", "ce pantalon"],
+                    ["阳性单数（元音/h开头）", "cet", "cet imperméable"],
+                    ["阴性单数", "cette", "cette robe"],
+                    ["复数", "ces", "ces chaussures"]
+                  ],
+                  examples: [
+                    { fr: "Cette veste est très jolie.", zh: "这件外套很好看。" },
+                    { fr: "Je préfère ce pull bleu.", zh: "我更喜欢这件蓝色毛衣。" },
+                    { fr: "Cet anorak est trop cher.", zh: "这件风衣太贵了。" },
+                    { fr: "Ces bottes sont confortables.", zh: "这双靴子很舒服。" }
+                  ],
+                  pitfall: "最常错的是把 cet 忘掉，写成 ce anorak。阳性名词遇元音开头必须用 cet。"
+                },
+                {
+                  title: "形容词性数配合与常见位置",
+                  explanation: "法语形容词通常要和名词性数一致。位置上，大部分颜色和描述词放在名词后；少数常见形容词（如 grand/petit/joli）常放在名词前。先掌握高频规则，写句子就会稳定很多。",
+                  table: [
+                    ["类别", "规则", "例子"],
+                    ["颜色形容词", "通常放名词后", "une robe rouge"],
+                    ["大小/评价常见词", "常放名词前", "un petit sac"],
+                    ["阴性变化", "一般加 e", "noir → noire"],
+                    ["复数变化", "一般加 s", "bleu → bleus"],
+                    ["阴性复数", "加 es", "joli → jolies"]
+                  ],
+                  examples: [
+                    { fr: "Je cherche une robe noire.", zh: "我在找一条黑色连衣裙。" },
+                    { fr: "C'est un joli manteau.", zh: "这是一件好看的大衣。" },
+                    { fr: "Ces chaussures blanches sont neuves.", zh: "这双白鞋是新的。" },
+                    { fr: "J'aime les petits sacs rouges.", zh: "我喜欢小红包。" }
+                  ],
+                  pitfall: "中文里形容词位置很自由，但法语位置错了会很别扭，尤其颜色词一般放名词后。"
+                },
+                {
+                  title: "近未来时：aller + 动词原形",
+                  explanation: "想表达‘马上要做某事’，A1 最实用结构就是 aller + 动词原形。它比将来时变位更简单，购物和日常计划里都很常见。",
+                  table: [
+                    ["主语", "aller 变位", "例句"],
+                    ["je", "vais", "Je vais acheter une veste."],
+                    ["tu", "vas", "Tu vas essayer cette jupe ?"],
+                    ["il/elle", "va", "Elle va prendre la robe bleue."],
+                    ["nous", "allons", "Nous allons payer en caisse."],
+                    ["vous", "allez", "Vous allez essayer quelle taille ?"],
+                    ["ils/elles", "vont", "Ils vont sortir ce soir."]
+                  ],
+                  examples: [
+                    { fr: "Je vais acheter ce manteau demain.", zh: "我明天要买这件大衣。" },
+                    { fr: "On va essayer la taille 38.", zh: "我们要试38码。" },
+                    { fr: "Elle ne va pas prendre cette jupe.", zh: "她不打算买这条裙子。" }
+                  ],
+                  pitfall: "不要把两个动词都变位：不能写 Je vais achète，要写 Je vais acheter。"
+                },
+                {
+                  title: "购物高频句型：询价、尺码、试穿",
+                  explanation: "在店里最重要的是把需求说清楚。A1 阶段先掌握固定句型：问价格、问尺码、请求试穿、表达合不合适。句型熟了，交流就不会卡住。",
+                  table: [
+                    ["功能", "法语表达", "说明"],
+                    ["询问价格", "C'est combien ?", "最常用问价句"],
+                    ["问有没有尺码", "Vous avez la taille 38 ?", "购物高频"],
+                    ["请求试穿", "Je peux essayer ?", "试衣间场景"],
+                    ["表达太大/太小", "C'est trop grand/petit.", "试穿反馈"],
+                    ["表达合适", "C'est parfait.", "确认购买"]
+                  ],
+                  examples: [
+                    { fr: "Bonjour, vous avez cette chemise en noir ?", zh: "您好，这件衬衫有黑色吗？" },
+                    { fr: "Je peux essayer cette veste ?", zh: "我可以试这件外套吗？" },
+                    { fr: "C'est trop grand, je vais prendre la taille 36.", zh: "太大了，我要拿36码。" },
+                    { fr: "D'accord, je prends cette robe.", zh: "好的，我要这条裙子。" }
+                  ],
+                  pitfall: "只说 taille 38 对方不一定懂你在问什么，最好用完整句 Vous avez la taille 38 ?。"
+                }
+              ],
+              vocabularyGroups: [
+                {
+                  theme: "衣物与配件",
+                  words: [
+                    { fr: "la robe", zh: "连衣裙", example: "Cette robe est très élégante.", exampleZh: "这条连衣裙很优雅。" },
+                    { fr: "la jupe", zh: "裙子", example: "Je vais acheter cette jupe.", exampleZh: "我打算买这条裙子。" },
+                    { fr: "le pantalon", zh: "裤子", example: "Ce pantalon est trop long.", exampleZh: "这条裤子太长了。" },
+                    { fr: "la chemise", zh: "衬衫", example: "Il porte une chemise blanche.", exampleZh: "他穿着一件白衬衫。" },
+                    { fr: "le pull", zh: "毛衣", example: "Ce pull est confortable.", exampleZh: "这件毛衣很舒服。" },
+                    { fr: "la veste", zh: "外套", example: "Je prends cette veste noire.", exampleZh: "我要这件黑色外套。" },
+                    { fr: "les chaussures (f.)", zh: "鞋子", example: "Ces chaussures sont neuves.", exampleZh: "这双鞋是新的。" },
+                    { fr: "le sac", zh: "包", example: "Je cherche un petit sac.", exampleZh: "我在找一个小包。" }
+                  ]
+                },
+                {
+                  theme: "颜色与外观描述",
+                  words: [
+                    { fr: "noir(e)", zh: "黑色的", example: "Je veux une veste noire.", exampleZh: "我想要一件黑色外套。" },
+                    { fr: "blanc/blanche", zh: "白色的", example: "Cette chemise blanche est jolie.", exampleZh: "这件白衬衫很好看。" },
+                    { fr: "bleu(e)", zh: "蓝色的", example: "Il porte un pull bleu.", exampleZh: "他穿着一件蓝色毛衣。" },
+                    { fr: "rouge", zh: "红色的", example: "J'aime cette robe rouge.", exampleZh: "我喜欢这条红色连衣裙。" },
+                    { fr: "vert(e)", zh: "绿色的", example: "Ces baskets vertes sont originales.", exampleZh: "这双绿色运动鞋很特别。" },
+                    { fr: "grand(e)", zh: "大的", example: "Ce manteau est trop grand.", exampleZh: "这件大衣太大了。" },
+                    { fr: "petit(e)", zh: "小的", example: "La taille est trop petite.", exampleZh: "这个尺码太小了。" },
+                    { fr: "joli(e)", zh: "好看的", example: "C'est une jolie jupe.", exampleZh: "这是一条好看的裙子。" }
+                  ]
+                },
+                {
+                  theme: "天气与季节表达",
+                  words: [
+                    { fr: "il fait chaud", zh: "天气热", example: "En été, il fait chaud.", exampleZh: "夏天天气很热。" },
+                    { fr: "il fait froid", zh: "天气冷", example: "Aujourd'hui, il fait froid.", exampleZh: "今天天气很冷。" },
+                    { fr: "il pleut", zh: "下雨", example: "Il pleut, je prends un parapluie.", exampleZh: "下雨了，我带一把伞。" },
+                    { fr: "il y a du vent", zh: "有风", example: "Il y a du vent ce matin.", exampleZh: "今天早上有风。" },
+                    { fr: "le soleil", zh: "太阳", example: "Il y a du soleil aujourd'hui.", exampleZh: "今天有太阳。" },
+                    { fr: "l'hiver (m.)", zh: "冬天", example: "En hiver, je porte un manteau.", exampleZh: "冬天我穿大衣。" },
+                    { fr: "l'été (m.)", zh: "夏天", example: "En été, je porte des sandales.", exampleZh: "夏天我穿凉鞋。" },
+                    { fr: "la météo", zh: "天气", example: "Je regarde la météo avant de sortir.", exampleZh: "我出门前会看天气预报。" }
+                  ]
+                },
+                {
+                  theme: "购物场景高频词",
+                  words: [
+                    { fr: "la taille", zh: "尺码", example: "Vous avez la taille 38 ?", exampleZh: "你们有38码吗？" },
+                    { fr: "essayer", zh: "试穿", example: "Je peux essayer cette veste ?", exampleZh: "我可以试这件外套吗？" },
+                    { fr: "cher/chère", zh: "贵的", example: "Ce pull est trop cher.", exampleZh: "这件毛衣太贵了。" },
+                    { fr: "pas cher", zh: "不贵", example: "Cette jupe n'est pas chère.", exampleZh: "这条裙子不贵。" },
+                    { fr: "le prix", zh: "价格", example: "Quel est le prix de cette robe ?", exampleZh: "这条连衣裙多少钱？" },
+                    { fr: "payer", zh: "付款", example: "Je vais payer par carte.", exampleZh: "我打算刷卡付款。" },
+                    { fr: "la caisse", zh: "收银台", example: "La caisse est au fond du magasin.", exampleZh: "收银台在店里最里面。" },
+                    { fr: "le magasin", zh: "商店", example: "Ce magasin ferme à 20 heures.", exampleZh: "这家店20点关门。" }
+                  ]
+                }
+              ],
+              dictation: {
+                intro: "本单元默写重点：衣物和颜色词、指示形容词、近未来时、购物句型。",
+                groups: [
+                  {
+                    title: "衣物词汇默写",
+                    type: "vocab",
+                    items: [
+                      { prompt: "连衣裙", answer: "la robe", hint: "阴性" },
+                      { prompt: "裙子", answer: "la jupe", hint: "阴性" },
+                      { prompt: "裤子", answer: "le pantalon", hint: "阳性" },
+                      { prompt: "衬衫", answer: "la chemise", hint: "阴性" },
+                      { prompt: "毛衣", answer: "le pull", hint: "阳性" },
+                      { prompt: "外套", answer: "la veste", hint: "阴性" },
+                      { prompt: "鞋子（复数）", answer: "les chaussures", hint: "复数" },
+                      { prompt: "包", answer: "le sac", hint: "阳性" }
+                    ]
+                  },
+                  {
+                    title: "颜色与指示形容词默写",
+                    type: "vocab",
+                    items: [
+                      { prompt: "这条裙子（阴性单数）", answer: "cette jupe", hint: "cette" },
+                      { prompt: "这件大衣（阳性元音开头）", answer: "cet anorak", hint: "cet" },
+                      { prompt: "这些鞋子（复数）", answer: "ces chaussures", hint: "ces" },
+                      { prompt: "黑色的（阴性）", answer: "noire", hint: "加 e" },
+                      { prompt: "白色的（阴性）", answer: "blanche", hint: "特殊拼写" },
+                      { prompt: "蓝色的（复数）", answer: "bleus", hint: "加 s" }
+                    ]
+                  },
+                  {
+                    title: "近未来时默写：aller + 动词原形",
+                    type: "conjugation",
+                    items: [
+                      { prompt: "je + acheter（近未来）", answer: "je vais acheter", hint: "vais + 原形" },
+                      { prompt: "tu + essayer（近未来）", answer: "tu vas essayer", hint: "vas + 原形" },
+                      { prompt: "elle + prendre（近未来）", answer: "elle va prendre", hint: "va + 原形" },
+                      { prompt: "nous + payer（近未来）", answer: "nous allons payer", hint: "allons + 原形" },
+                      { prompt: "vous + choisir（近未来）", answer: "vous allez choisir", hint: "allez + 原形" },
+                      { prompt: "ils + sortir（近未来）", answer: "ils vont sortir", hint: "vont + 原形" },
+                      { prompt: "je + acheter（否定近未来）", answer: "je ne vais pas acheter", hint: "ne...pas 包 aller" }
+                    ]
+                  },
+                  {
+                    title: "购物句型默写",
+                    type: "phrases",
+                    items: [
+                      { prompt: "这个多少钱？", answer: "C'est combien ?", hint: "问价" },
+                      { prompt: "你们有38码吗？", answer: "Vous avez la taille 38 ?", hint: "问尺码" },
+                      { prompt: "我可以试穿吗？", answer: "Je peux essayer ?", hint: "试穿" },
+                      { prompt: "这件太大了。", answer: "C'est trop grand.", hint: "试穿反馈" },
+                      { prompt: "我打算买这件黑外套。", answer: "Je vais acheter cette veste noire.", hint: "aller + 原形" },
+                      { prompt: "今天天冷，我要穿毛衣。", answer: "Il fait froid, je vais porter un pull.", hint: "天气+计划" }
+                    ]
+                  }
+                ]
+              },
+              phonetique: "本单元重点：1）词尾辅音常不发音（grand/petit 在连读时要注意）；2）颜色词阴阳变化常导致发音变化（blanc/blanche）；3）近未来时连读节奏要顺（je vais acheter、vous allez essayer）。建议把购物句型整句跟读，而不是逐词读。",
+              tcf: "TCF Canada 听力常出现购物和天气场景：问价、尺码、颜色、是否合适。阅读常见商品广告和商店公告，重点是快速识别价格、折扣和商品特征。会用近未来时能明显提升口语任务里的自然度。"
             },
             exercises: [
-              { type: "填空", prompt: "Cette robe est _____ et il fait _____.", answer: "bleue / froid" },
-              { type: "改错", prompt: "Corrigez : Je vais acheter ce chaussures.", answer: "Je vais acheter ces chaussures." },
-              { type: "表达", prompt: "写 3 句话描述你今天穿什么和天气怎样。", answer: "开放题，检查颜色和天气表达。" }
+              {
+                type: "指示形容词填空",
+                instruction: "根据名词性数和首字母，填入 ce / cet / cette / ces。",
+                items: [
+                  { prompt: "_____ robe est jolie.", answer: "Cette", explanation: "robe 阴性单数，用 cette。" },
+                  { prompt: "_____ pantalon est trop grand.", answer: "Ce", explanation: "pantalon 阳性单数，用 ce。" },
+                  { prompt: "_____ anorak est cher.", answer: "Cet", explanation: "阳性名词元音开头，用 cet。" },
+                  { prompt: "_____ chaussures sont neuves.", answer: "Ces", explanation: "复数名词用 ces。" },
+                  { prompt: "Tu préfères _____ chemise ou _____ pull ?", answer: "cette / ce", explanation: "chemise 阴性用 cette；pull 阳性用 ce。" }
+                ]
+              },
+              {
+                type: "形容词变形",
+                instruction: "根据主语和名词，把括号里的形容词变为正确形式。",
+                items: [
+                  { prompt: "Cette jupe est (noir) _____.", answer: "noire", explanation: "jupe 阴性单数，noir + e。" },
+                  { prompt: "Ces chaussures sont (blanc) _____.", answer: "blanches", explanation: "chaussures 阴性复数，blanche + s。" },
+                  { prompt: "Il porte un pull (bleu) _____.", answer: "bleu", explanation: "pull 阳性单数，保持 bleu。" },
+                  { prompt: "Elles achètent des sacs (petit) _____.", answer: "petits", explanation: "sacs 阳性复数，加 s。" },
+                  { prompt: "J'aime cette veste (rouge) _____.", answer: "rouge", explanation: "rouge 阴阳同形，单数不变。" }
+                ]
+              },
+              {
+                type: "近未来时填空",
+                instruction: "用 aller + 动词原形完成句子。",
+                items: [
+                  { prompt: "Je _____ (acheter) cette robe demain.", answer: "vais acheter", explanation: "je + aller 变位是 vais。" },
+                  { prompt: "Tu _____ (essayer) cette veste ?", answer: "vas essayer", explanation: "tu + aller 变位是 vas。" },
+                  { prompt: "Nous _____ (payer) par carte.", answer: "allons payer", explanation: "nous + aller 变位是 allons。" },
+                  { prompt: "Elle ne _____ pas (prendre) cette jupe.", answer: "va prendre", explanation: "否定包 aller：ne va pas + 原形。" },
+                  { prompt: "Ils _____ (sortir) ce soir.", answer: "vont sortir", explanation: "ils + aller 变位是 vont。" }
+                ]
+              },
+              {
+                type: "改错题",
+                instruction: "找出句子中的错误并改正，说明原因。",
+                items: [
+                  { prompt: "Ce robe est rouge.", answer: "Cette robe est rouge.", explanation: "robe 阴性单数，用 cette。" },
+                  { prompt: "Je vais achète cette veste.", answer: "Je vais acheter cette veste.", explanation: "aller 后接动词原形。" },
+                  { prompt: "Ces pantalon est trop cher.", answer: "Ce pantalon est trop cher.", explanation: "pantalon 单数不能用 ces。" },
+                  { prompt: "Cette chaussures sont jolies.", answer: "Ces chaussures sont jolies.", explanation: "chaussures 复数，用 ces。" },
+                  { prompt: "Je peux essayer cette ?", answer: "Je peux essayer cette veste ?", explanation: "指示形容词后必须接名词。" }
+                ]
+              },
+              {
+                type: "连线匹配",
+                instruction: "把左列购物情境和右列最合适表达连线（选择对应选项）。",
+                options: [
+                  "a. C'est combien ?",
+                  "b. Vous avez la taille 38 ?",
+                  "c. Je peux essayer ?",
+                  "d. C'est trop petit."
+                ],
+                items: [
+                  { prompt: "① 你想先问价格", answer: "a. C'est combien ?", explanation: "购物第一步常先问价。" },
+                  { prompt: "② 你想确认有没有你的尺码", answer: "b. Vous avez la taille 38 ?", explanation: "问尺码固定句型。" },
+                  { prompt: "③ 你想进试衣间试穿", answer: "c. Je peux essayer ?", explanation: "试穿高频句。" },
+                  { prompt: "④ 试穿后发现偏小", answer: "d. C'est trop petit.", explanation: "反馈尺寸问题。" }
+                ]
+              },
+              {
+                type: "语法填空",
+                instruction: "阅读下面购物对话，在每个空格填入最恰当的词（指示形容词、形容词形式或动词形式）。",
+                passage: "Au magasin: Bonjour, je cherche (1)_____ veste noire. — D'accord. Vous préférez (2)_____ modèle-ci ou (3)_____ modèle-là ? — Je préfère (4)_____ veste-ci. Je peux (5)_____ ? — Oui, bien sûr. La cabine est là-bas. — Merci. Hmm... c'est un peu grand. Vous avez la taille 36 ? — Oui, voilà. — Parfait ! Je (6)_____ prendre celle-ci. (7)_____ est le prix ? — Elle coûte 45 euros. — D'accord, je vais (8)_____ par carte. Aujourd'hui il (9)_____ froid, donc je vais aussi acheter (10)_____ pull chaud.",
+                items: [
+                  { blank: 1, answer: "une", explanation: "veste 阴性单数，用 une。" },
+                  { blank: 2, answer: "ce", explanation: "modèle 阳性单数，用 ce。" },
+                  { blank: 3, answer: "ce", explanation: "同样是 modèle，仍用 ce。" },
+                  { blank: 4, answer: "cette", explanation: "veste 阴性单数，用 cette。" },
+                  { blank: 5, answer: "essayer", explanation: "pouvoir 后接动词原形。" },
+                  { blank: 6, answer: "vais", explanation: "je + aller 变位：vais。" },
+                  { blank: 7, answer: "Quel", explanation: "prix 阳性，用 Quel est le prix ?" },
+                  { blank: 8, answer: "payer", explanation: "aller 后接动词原形 payer。" },
+                  { blank: 9, answer: "fait", explanation: "天气表达固定：il fait froid。" },
+                  { blank: 10, answer: "un", explanation: "pull 阳性单数，用 un。" }
+                ]
+              },
+              {
+                type: "表达练习",
+                instruction: "根据场景写 40-60 个词的购物对话，至少包含：1次问价、1次问尺码、1句近未来时。",
+                items: [
+                  {
+                    prompt: "你在服装店买外套，请写一段简短对话（40-60词）。",
+                    modelAnswer: "Bonjour, je cherche cette veste noire. C'est combien ? Vous avez la taille 38 ? Je peux essayer ? Merci. La taille 38 est un peu grande, je vais prendre la taille 36. Parfait, je vais payer par carte.",
+                    keyPoints: [
+                      "包含问价句（C'est combien ?）",
+                      "包含尺码句（Vous avez la taille... ?）",
+                      "包含试穿请求（Je peux essayer ?）",
+                      "近未来时结构正确（je vais prendre/payer）",
+                      "衣物与颜色表达清楚",
+                      "整体长度控制在 40-60 词"
+                    ]
+                  }
+                ]
+              }
             ]
           },
           {
@@ -1033,16 +1864,319 @@ window.siteData = {
             title: "Qu’est-ce qu’on fait aujourd’hui ?",
             focus: "日程、时间、活动安排、邀约与回应",
             lecture: {
-              summary: "从这里开始，你会更频繁用法语安排一天的活动。",
-              canDo: ["说时间", "发出邀约", "接受或拒绝建议"],
-              grammar: ["现在时补充", "过去最近时", "频率副词扩展"],
-              vocabulary: ["heure, rendez-vous, sortie", "cinéma, musée, sport", "accepter, refuser"],
-              tcf: "适合活动安排、时间信息、邀约场景听力。"
+              summary: "这一单元的核心是‘把一天说清楚’：几点做什么、多久一次、要不要一起去。你会把时间表达、反身动词、频率副词和邀约句型串起来，形成可直接用于日常沟通的输出模板。学完后你可以更自然地安排活动、发出邀约并礼貌回应。",
+              canDo: [
+                "用法语准确表达整点、半点和日程时间",
+                "描述自己的日常作息和安排",
+                "使用常见反身动词说“起床、休息、睡觉”",
+                "用频率副词表达习惯（总是、经常、有时、从不）",
+                "发出邀约并做接受或拒绝回应",
+                "用 venir de + 动词原形表达“刚刚做完”"
+              ],
+              grammarSections: [
+                {
+                  title: "时间表达与日程句型",
+                  explanation: "先会说时间，才能安排一天。A1 阶段先掌握高频结构：il est + 时间；à + 时间点；de...à... 表示时间区间。",
+                  table: [
+                    ["功能", "法语", "例子"],
+                    ["整点", "Il est + 数字 + heure(s)", "Il est huit heures."],
+                    ["半点", "... et demie", "Il est six heures et demie."],
+                    ["差一刻", "... moins le quart", "Il est neuf heures moins le quart."],
+                    ["在几点", "à + 时间", "On se voit à 18h."],
+                    ["时间区间", "de ... à ...", "Je travaille de 9h à 17h."]
+                  ],
+                  examples: [
+                    { fr: "Je me lève à sept heures.", zh: "我七点起床。" },
+                    { fr: "Le cours commence à neuf heures et demie.", zh: "课程九点半开始。" },
+                    { fr: "On dîne de 19h à 20h.", zh: "我们19点到20点吃晚饭。" },
+                    { fr: "Il est dix heures moins le quart.", zh: "现在差一刻十点。" }
+                  ],
+                  pitfall: "中文常省略介词，但法语说具体时间点时别忘了 à（如 à 18h）。"
+                },
+                {
+                  title: "反身动词入门：se lever / se coucher / se reposer",
+                  explanation: "反身动词要带反身代词（me/te/se/nous/vous/se）。记忆方式：先选主语，再选对应代词，最后再放动词变位。",
+                  table: [
+                    ["主语", "se lever", "se coucher"],
+                    ["je", "me lève", "me couche"],
+                    ["tu", "te lèves", "te couches"],
+                    ["il/elle", "se lève", "se couche"],
+                    ["nous", "nous levons", "nous couchons"],
+                    ["vous", "vous levez", "vous couchez"],
+                    ["ils/elles", "se lèvent", "se couchent"]
+                  ],
+                  examples: [
+                    { fr: "Je me lève à 7h et je me couche à 23h.", zh: "我7点起床，23点睡觉。" },
+                    { fr: "Nous nous reposons après le travail.", zh: "我们下班后休息。" },
+                    { fr: "Elle se couche tard le samedi.", zh: "她周六睡得晚。" }
+                  ],
+                  pitfall: "不要漏代词：不能写 Je lève à 7h，必须写 Je me lève。"
+                },
+                {
+                  title: "频率副词：toujours / souvent / parfois / rarement / jamais",
+                  explanation: "说习惯时，频率副词很关键。基础规则：它们通常放在变位动词后；否定时用 ne...jamais 表示‘从不’。",
+                  table: [
+                    ["副词", "中文", "例句"],
+                    ["toujours", "总是", "Je prends toujours le bus."],
+                    ["souvent", "经常", "On sort souvent le soir."],
+                    ["parfois", "有时", "Elle fait parfois du sport."],
+                    ["rarement", "很少", "Je regarde rarement la télé."],
+                    ["jamais", "从不", "Je ne me couche jamais tôt."]
+                  ],
+                  examples: [
+                    { fr: "Je vais souvent au cinéma le vendredi.", zh: "我周五经常去看电影。" },
+                    { fr: "Nous faisons parfois une promenade après le dîner.", zh: "我们晚饭后有时散步。" },
+                    { fr: "Il ne prend jamais le métro le dimanche.", zh: "他周日从不坐地铁。" }
+                  ],
+                  pitfall: "jamais 常和 ne 一起出现：Je ne vais jamais... 不能只写 Je vais jamais。"
+                },
+                {
+                  title: "邀约与回应：On va... ? / Tu veux... ?",
+                  explanation: "活动安排里最实用的是邀约句。先会提出，再会回应。A1 先掌握三种回应：接受、婉拒、改时间。",
+                  table: [
+                    ["功能", "法语表达", "说明"],
+                    ["发出邀约", "On va au cinéma ?", "最常见口语邀约"],
+                    ["询问意愿", "Tu veux sortir ce soir ?", "直接而自然"],
+                    ["接受", "Oui, avec plaisir.", "礼貌接受"],
+                    ["婉拒", "Désolé(e), je ne peux pas.", "给出拒绝"],
+                    ["改时间", "On peut y aller demain ?", "提出替代方案"]
+                  ],
+                  examples: [
+                    { fr: "On va boire un café après le cours ?", zh: "下课后我们去喝咖啡吗？" },
+                    { fr: "Oui, avec plaisir !", zh: "好啊，很乐意！" },
+                    { fr: "Désolée, je ne peux pas ce soir. On peut y aller demain ?", zh: "抱歉我今晚不行，我们明天去可以吗？" }
+                  ],
+                  pitfall: "只说 Non 会显得生硬，考试和真实沟通里最好加一句理由或替代时间。"
+                },
+                {
+                  title: "过去最近时：venir de + 动词原形",
+                  explanation: "想表达‘刚刚做完’，最简单结构是 venir de + 动词原形。这个结构在日程沟通里很常用，比如‘我刚下课’‘我刚到家’。",
+                  table: [
+                    ["主语", "venir 变位", "例句"],
+                    ["je", "viens de", "Je viens de finir le cours."],
+                    ["tu", "viens de", "Tu viens de rentrer ?"],
+                    ["il/elle", "vient de", "Elle vient d'arriver."],
+                    ["nous", "venons de", "Nous venons de manger."],
+                    ["vous", "venez de", "Vous venez de commencer ?"],
+                    ["ils/elles", "viennent de", "Ils viennent de partir."]
+                  ],
+                  examples: [
+                    { fr: "Je viens de rentrer à la maison.", zh: "我刚回到家。" },
+                    { fr: "On vient de finir le travail.", zh: "我们刚下班。" },
+                    { fr: "Elle vient de m'appeler.", zh: "她刚给我打电话。" }
+                  ],
+                  pitfall: "venir de 后面必须是动词原形，不能写 Je viens de suis arrivé。"
+                }
+              ],
+              vocabularyGroups: [
+                {
+                  theme: "时间与日程词汇",
+                  words: [
+                    { fr: "l'heure (f.)", zh: "时间/几点", example: "Tu as l'heure ?", exampleZh: "你知道现在几点吗？" },
+                    { fr: "le matin", zh: "早上", example: "Je travaille le matin.", exampleZh: "我上午工作。" },
+                    { fr: "l'après-midi (m.)", zh: "下午", example: "On se voit l'après-midi.", exampleZh: "我们下午见。" },
+                    { fr: "le soir", zh: "晚上", example: "Je fais du sport le soir.", exampleZh: "我晚上做运动。" },
+                    { fr: "aujourd'hui", zh: "今天", example: "Aujourd'hui, je suis libre.", exampleZh: "我今天有空。" },
+                    { fr: "demain", zh: "明天", example: "On sort demain ?", exampleZh: "我们明天出去吗？" },
+                    { fr: "ce week-end", zh: "这个周末", example: "Ce week-end, je vais au musée.", exampleZh: "这个周末我去博物馆。" },
+                    { fr: "le rendez-vous", zh: "约会/约定", example: "J'ai un rendez-vous à 18h.", exampleZh: "我18点有个约。" }
+                  ]
+                },
+                {
+                  theme: "活动与外出动词",
+                  words: [
+                    { fr: "sortir", zh: "外出", example: "On sort ce soir ?", exampleZh: "我们今晚出去吗？" },
+                    { fr: "rester", zh: "待在", example: "Je reste à la maison.", exampleZh: "我待在家里。" },
+                    { fr: "se promener", zh: "散步", example: "Nous nous promenons au parc.", exampleZh: "我们在公园散步。" },
+                    { fr: "regarder", zh: "看（电影/电视）", example: "Je regarde un film.", exampleZh: "我看一部电影。" },
+                    { fr: "écouter", zh: "听", example: "Elle écoute de la musique.", exampleZh: "她在听音乐。" },
+                    { fr: "jouer", zh: "玩/演奏", example: "Ils jouent au foot.", exampleZh: "他们踢足球。" },
+                    { fr: "faire du sport", zh: "做运动", example: "Je fais du sport trois fois par semaine.", exampleZh: "我每周做三次运动。" },
+                    { fr: "se reposer", zh: "休息", example: "Je me repose après le travail.", exampleZh: "我下班后休息。" }
+                  ]
+                },
+                {
+                  theme: "邀约与回应表达",
+                  words: [
+                    { fr: "On va ... ?", zh: "我们去……吗？", example: "On va au cinéma ?", exampleZh: "我们去看电影吗？" },
+                    { fr: "Tu veux ... ?", zh: "你想……吗？", example: "Tu veux boire un café ?", exampleZh: "你想喝杯咖啡吗？" },
+                    { fr: "Ça te dit ?", zh: "你感兴趣吗？", example: "Un concert ce soir, ça te dit ?", exampleZh: "今晚有场演唱会，你想去吗？" },
+                    { fr: "avec plaisir", zh: "很乐意", example: "Oui, avec plaisir !", exampleZh: "好啊，很乐意！" },
+                    { fr: "désolé(e)", zh: "抱歉", example: "Désolé, je ne peux pas.", exampleZh: "抱歉，我不行。" },
+                    { fr: "pas possible", zh: "不行/没法", example: "Ce soir, ce n'est pas possible.", exampleZh: "今晚不方便。" },
+                    { fr: "on peut ... ?", zh: "我们可以……吗？", example: "On peut y aller demain ?", exampleZh: "我们明天去可以吗？" },
+                    { fr: "d'accord", zh: "好的", example: "D'accord, à demain !", exampleZh: "好的，明天见！" }
+                  ]
+                },
+                {
+                  theme: "频率副词",
+                  words: [
+                    { fr: "toujours", zh: "总是", example: "Je suis toujours à l'heure.", exampleZh: "我总是准时。" },
+                    { fr: "souvent", zh: "经常", example: "On sort souvent le vendredi.", exampleZh: "我们周五经常出去。" },
+                    { fr: "parfois", zh: "有时", example: "Je prends parfois le métro.", exampleZh: "我有时坐地铁。" },
+                    { fr: "rarement", zh: "很少", example: "Elle regarde rarement la télé.", exampleZh: "她很少看电视。" },
+                    { fr: "jamais", zh: "从不", example: "Je ne me couche jamais tôt.", exampleZh: "我从不早睡。" },
+                    { fr: "déjà", zh: "已经", example: "J'ai déjà mangé.", exampleZh: "我已经吃过了。" },
+                    { fr: "encore", zh: "还/仍然", example: "Il travaille encore.", exampleZh: "他还在工作。" },
+                    { fr: "bientôt", zh: "很快", example: "Je vais bientôt partir.", exampleZh: "我很快就要出发了。" }
+                  ]
+                }
+              ],
+              dictation: {
+                intro: "本单元默写重点：时间表达、活动词汇、反身动词、邀约句型。",
+                groups: [
+                  {
+                    title: "时间默写",
+                    type: "numbers",
+                    items: [
+                      { prompt: "7:00", answer: "sept heures", hint: "整点" },
+                      { prompt: "8:30", answer: "huit heures et demie", hint: "半点" },
+                      { prompt: "9:45", answer: "dix heures moins le quart", hint: "差一刻" },
+                      { prompt: "12:15", answer: "douze heures et quart", hint: "一刻" },
+                      { prompt: "18:00", answer: "dix-huit heures", hint: "24小时制" },
+                      { prompt: "20:30", answer: "vingt heures et demie", hint: "晚上" }
+                    ]
+                  },
+                  {
+                    title: "活动词汇默写",
+                    type: "vocab",
+                    items: [
+                      { prompt: "外出", answer: "sortir", hint: "动词原形" },
+                      { prompt: "散步", answer: "se promener", hint: "反身动词" },
+                      { prompt: "休息", answer: "se reposer", hint: "反身动词" },
+                      { prompt: "做运动", answer: "faire du sport", hint: "固定搭配" },
+                      { prompt: "约会/约定", answer: "le rendez-vous", hint: "阳性" },
+                      { prompt: "今天", answer: "aujourd'hui", hint: "时间词" },
+                      { prompt: "明天", answer: "demain", hint: "时间词" },
+                      { prompt: "这个周末", answer: "ce week-end", hint: "固定表达" }
+                    ]
+                  },
+                  {
+                    title: "反身动词变位默写",
+                    type: "conjugation",
+                    items: [
+                      { prompt: "je + se lever", answer: "je me lève", hint: "me + lève" },
+                      { prompt: "tu + se coucher", answer: "tu te couches", hint: "te + couches" },
+                      { prompt: "elle + se reposer", answer: "elle se repose", hint: "se + repose" },
+                      { prompt: "nous + se lever", answer: "nous nous levons", hint: "nous nous" },
+                      { prompt: "vous + se coucher", answer: "vous vous couchez", hint: "vous vous" },
+                      { prompt: "ils + se reposer", answer: "ils se reposent", hint: "se + reposent" },
+                      { prompt: "je + se coucher（否定）", answer: "je ne me couche pas", hint: "ne...pas 包代词+动词" }
+                    ]
+                  },
+                  {
+                    title: "邀约句型默写",
+                    type: "phrases",
+                    items: [
+                      { prompt: "今晚我们去看电影吗？", answer: "On va au cinéma ce soir ?", hint: "邀约" },
+                      { prompt: "你想去喝咖啡吗？", answer: "Tu veux boire un café ?", hint: "询问意愿" },
+                      { prompt: "好啊，很乐意。", answer: "Oui, avec plaisir.", hint: "接受" },
+                      { prompt: "抱歉，我今晚不行。", answer: "Désolé(e), je ne peux pas ce soir.", hint: "婉拒" },
+                      { prompt: "我们明天去可以吗？", answer: "On peut y aller demain ?", hint: "改时间" },
+                      { prompt: "我刚下课。", answer: "Je viens de finir le cours.", hint: "venir de" }
+                    ]
+                  }
+                ]
+              },
+              phonetique: "本单元重点：1）时间表达里的连读和节奏（huit heures、dix heures et demie）；2）反身代词与动词连读（je me lève、on se repose）；3）邀约句语调要自然上扬（On va au cinéma ?）。建议把‘时间+动作’做成整句朗读。",
+              tcf: "TCF Canada 听力里，活动安排和邀约对话非常常见，常考‘几点、去哪儿、是否接受’。阅读里会出现活动通知和日程信息。掌握频率副词和时间表达，能明显提升信息定位速度。"
             },
             exercises: [
-              { type: "填空", prompt: "Il est six heures et demie. On _____ au cinéma ?", answer: "va" },
-              { type: "选择", prompt: "拒绝邀约更合适的是？ A. Oui, avec plaisir. B. Désolé, je ne peux pas.", answer: "B. Désolé, je ne peux pas." },
-              { type: "表达", prompt: "写一个邀请朋友周末出门的 3 句小对话。", answer: "开放题，检查时间和邀约表达。" }
+              {
+                type: "时间表达填空",
+                instruction: "根据中文提示，用法语写出正确时间表达。",
+                items: [
+                  { prompt: "8:30（八点半）", answer: "huit heures et demie", explanation: "半点用 et demie。" },
+                  { prompt: "9:45（差一刻十点）", answer: "dix heures moins le quart", explanation: "差一刻用 moins le quart。" },
+                  { prompt: "18:00（十八点）", answer: "dix-huit heures", explanation: "24小时制常用于日程。" },
+                  { prompt: "12:15（十二点一刻）", answer: "douze heures et quart", explanation: "一刻用 et quart。" },
+                  { prompt: "我七点起床。", answer: "Je me lève à sept heures.", explanation: "时间点前用 à。" }
+                ]
+              },
+              {
+                type: "反身动词变位",
+                instruction: "把括号中的反身动词变位为正确形式。",
+                items: [
+                  { prompt: "Je (se lever) _____ à 7h.", answer: "me lève", explanation: "je 对应 me + lève。" },
+                  { prompt: "Tu (se coucher) _____ tard le samedi.", answer: "te couches", explanation: "tu 对应 te + couches。" },
+                  { prompt: "Nous (se reposer) _____ après le déjeuner.", answer: "nous reposons", explanation: "nous 对应 nous nous reposons。" },
+                  { prompt: "Elle ne (se coucher) _____ pas tôt.", answer: "se couche", explanation: "否定包代词和动词：ne se couche pas。" },
+                  { prompt: "Ils (se promener) _____ au parc.", answer: "se promènent", explanation: "ils 对应 se + promènent。" }
+                ]
+              },
+              {
+                type: "频率副词填空",
+                instruction: "从 toujours / souvent / parfois / rarement / jamais 中选最合适词填空。",
+                items: [
+                  { prompt: "Je prends _____ le bus pour aller au travail (几乎每天).", answer: "souvent", explanation: "表示经常但非100%。" },
+                  { prompt: "Il est _____ en retard (每次都不迟到).", answer: "toujours", explanation: "总是准时用 toujours。" },
+                  { prompt: "Nous allons _____ au musée (偶尔).", answer: "parfois", explanation: "有时用 parfois。" },
+                  { prompt: "Elle ne sort _____ le lundi.", answer: "jamais", explanation: "ne...jamais = 从不。" },
+                  { prompt: "Je regarde _____ la télé (几乎不看).", answer: "rarement", explanation: "很少用 rarement。" }
+                ]
+              },
+              {
+                type: "改错题",
+                instruction: "找出句子中的错误并改正，说明原因。",
+                items: [
+                  { prompt: "Je lève à sept heures.", answer: "Je me lève à sept heures.", explanation: "反身动词必须带代词 me。" },
+                  { prompt: "On va au cinéma demain ? Oui, je peux pas.", answer: "On va au cinéma demain ? Désolé, je ne peux pas.", explanation: "否定需 ne...pas，回应更自然。" },
+                  { prompt: "Je viens de suis arrivé.", answer: "Je viens d'arriver.", explanation: "venir de 后接动词原形。" },
+                  { prompt: "Il est huit heures demie.", answer: "Il est huit heures et demie.", explanation: "半点需 et demie。" },
+                  { prompt: "Je vais jamais au parc.", answer: "Je ne vais jamais au parc.", explanation: "jamais 常与 ne 连用。" }
+                ]
+              },
+              {
+                type: "连线匹配",
+                instruction: "把左列邀约情境和右列最合适回应连线（选择对应选项）。",
+                options: [
+                  "a. Oui, avec plaisir !",
+                  "b. Désolé(e), je ne peux pas ce soir.",
+                  "c. On peut y aller demain ?",
+                  "d. Je viens de finir le travail."
+                ],
+                items: [
+                  { prompt: "① 朋友邀请你周五晚上看电影，你很愿意", answer: "a. Oui, avec plaisir !", explanation: "积极接受邀约。" },
+                  { prompt: "② 你今晚确实没空，需要婉拒", answer: "b. Désolé(e), je ne peux pas ce soir.", explanation: "礼貌拒绝。" },
+                  { prompt: "③ 你想改约到明天", answer: "c. On peut y aller demain ?", explanation: "提出替代时间。" },
+                  { prompt: "④ 对方问你现在为什么晚到，你说刚下班", answer: "d. Je viens de finir le travail.", explanation: "venir de 表示刚刚完成。" }
+                ]
+              },
+              {
+                type: "语法填空",
+                instruction: "阅读下面对话，在每个空格填入最恰当的词（时间表达、反身动词、频率副词或动词形式）。",
+                passage: "— Salut, tu fais quoi aujourd'hui ? — Le matin, je (1)_____ à 7h et je (2)_____ à 8h. Je travaille de 9h à 17h. — Tu sors (3)_____ le soir ? — Oui, je sors (4)_____. Le vendredi, on va souvent au cinéma. — Super ! On va au cinéma ce soir ? — Désolée, je ne peux pas. Je viens de (5)_____ le travail et je suis fatiguée. — D'accord. On peut y aller (6)_____ ? — Oui, avec plaisir. On se retrouve à (7)_____ heures et (8)_____ ? — Parfait. Et après, on va boire un café ? — Oui, mais je ne bois (9)_____ de café le soir. Je prends (10)_____ une tisane.",
+                items: [
+                  { blank: 1, answer: "me lève", explanation: "反身动词：je me lève。" },
+                  { blank: 2, answer: "pars", explanation: "这里表示出门上班：je pars。" },
+                  { blank: 3, answer: "souvent", explanation: "问频率常用 souvent。" },
+                  { blank: 4, answer: "parfois", explanation: "回答补充频率‘有时’。" },
+                  { blank: 5, answer: "finir", explanation: "venir de + 动词原形。" },
+                  { blank: 6, answer: "demain", explanation: "改约到明天。" },
+                  { blank: 7, answer: "dix-neuf", explanation: "19点。" },
+                  { blank: 8, answer: "demie", explanation: "半点：et demie。" },
+                  { blank: 9, answer: "jamais", explanation: "ne...jamais = 从不。" },
+                  { blank: 10, answer: "plutôt", explanation: "Je prends plutôt... = 我更倾向于..." }
+                ]
+              },
+              {
+                type: "表达练习",
+                instruction: "根据场景写 40-60 个词，安排一次周末活动。至少包含：1个具体时间、1句邀约、1句接受/拒绝、1个频率副词。",
+                items: [
+                  {
+                    prompt: "给朋友发消息，约周末见面并说明你的日程（40-60词）。",
+                    modelAnswer: "Salut ! Samedi, je me lève à 8h et je fais souvent du sport le matin. L'après-midi, je suis libre. On va au musée à 15 heures ? Si tu ne peux pas, on peut y aller dimanche. Moi, je suis partante avec plaisir !",
+                    keyPoints: [
+                      "包含具体时间（如 à 15 heures）",
+                      "包含邀约句（On va... ?）",
+                      "包含回应句（avec plaisir / je ne peux pas）",
+                      "正确使用一个频率副词（souvent/parfois等）",
+                      "句子顺序清楚，信息完整",
+                      "整体长度控制在 40-60 词"
+                    ]
+                  }
+                ]
+              }
             ]
           },
           {

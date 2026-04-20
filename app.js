@@ -2852,12 +2852,16 @@ function renderVocabGroup(g){
   return `<div class="lec-vocab-group">
     <div class="lec-vocab-theme">${esc(g.theme)}</div>
     <div class="lec-vocab-grid">
-      ${(g.words||[]).map(w=>`
+      ${(g.words||[]).map(w=>{
+        const exZh = w.exampleZh || (w.example ? `例句大意：这句话在讲“${w.zh}”这个词的用法。` : "");
+        return `
         <div class="lec-vocab-card">
           <span class="lec-word-fr">${esc(w.fr)}</span>
           <span class="lec-word-zh">${esc(w.zh)}</span>
           ${w.example?`<span class="lec-word-ex">${esc(w.example)}</span>`:""}
-        </div>`).join("")}
+          ${exZh?`<span class="lec-word-ex-zh">${esc(exZh)}</span>`:""}
+        </div>`;
+      }).join("")}
     </div>
   </div>`;
 }

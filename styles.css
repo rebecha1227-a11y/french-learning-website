@@ -324,6 +324,7 @@ ul,ol{margin:0;padding-left:18px}
 .lec-word-fr{display:block;font-style:italic;color:var(--text-main);font-weight:500}
 .lec-word-zh{display:block;color:var(--text-sub)}
 .lec-word-ex{display:block;color:var(--text-dim);font-size:11px;margin-top:2px}
+.lec-word-ex-zh{display:block;color:var(--text-sub);font-size:11px;margin-top:2px}
 .lec-cando-list{font-size:13px;color:var(--text-sub);line-height:1.8;padding-left:18px}
 .ex-block{margin-bottom:14px}
 .ex-type{font-size:14px;color:var(--accent-blue);margin-bottom:6px;display:block}
