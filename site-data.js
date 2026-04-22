@@ -2183,72 +2183,1104 @@ window.siteData = {
             id: "a1-u7",
             code: "Unité 7",
             title: "Chez moi !",
-            focus: "住房、家具、合租规则、居家问题与说明",
+            focus: "住房、家具摆放、楼内规则、道歉留言与居家报修",
             lecture: {
-              summary: "住房和公告类文本很适合拿来做阅读基础训练。",
-              canDo: ["描述房间和家具", "说明家中问题", "理解简单居住规则"],
-              grammar: ["地点介词扩展", "COD 代词 le/la/les", "义务和禁止基础"],
-              vocabulary: ["appartement, cuisine, salle de bains", "meuble, lit, table", "interdit, réparation"],
-              tcf: "适合租房启事、居住规则、报修场景。"
+              summary: "第 7 单元正式进入 Édito A1 里非常生活化的一块：搬家、摆家具、看楼规、给邻居留言、说明家里哪里坏了。教材主线不是单纯背房间名词，而是让你把住房信息、空间位置、规则表达和小故障说明连起来。学完后，你既能读懂简单租房和楼内公告，也能用最基础的法语解释家里的实际问题。",
+              canDo: [
+                "询问住房面积、房间数量和基本设备",
+                "用复合过去时简单说明搬家、看房、买家具的经历",
+                "用 devant / derrière / sous / entre 等表达家具位置",
+                "读懂 règlement intérieur 里的义务与禁止",
+                "给邻居写简短道歉留言或生活通知",
+                "说明家里有什么故障，并联系合适的维修人员"
+              ],
+              grammarSections: [
+                {
+                  title: "Le passé composé (1)：用 avoir 说最近做过的事",
+                  explanation: "本单元第一次把过去动作和居家场景连起来，比如搬家了、看了房子、买了家具、找到了新住处。A1 阶段先稳定掌握 avoir 作助动词的复合过去时：主语 + avoir 变位 + 过去分词。教材里最常见的是 déménager、trouver、acheter、visiter 这一组生活动词。",
+                  table: [
+                    ["动词原形", "过去分词", "例句"],
+                    ["déménager", "déménagé", "J'ai déménagé le mois dernier."],
+                    ["trouver", "trouvé", "Elle a trouvé un logement."],
+                    ["acheter", "acheté", "Nous avons acheté un canapé."],
+                    ["visiter", "visité", "Ils ont visité trois appartements."]
+                  ],
+                  examples: [
+                    { fr: "J'ai déménagé le mois dernier.", zh: "我上个月搬家了。" },
+                    { fr: "Nous avons visité trois appartements.", zh: "我们看了三套公寓。" },
+                    { fr: "Elle a trouvé un logement près du centre.", zh: "她在市中心附近找到了一个住处。" },
+                    { fr: "Ils ont acheté une table et deux chaises.", zh: "他们买了一张桌子和两把椅子。" }
+                  ],
+                  pitfall: "不要把过去分词直接当作动词变位用。法语必须有助动词，写 J'ai trouvé，不能只写 Je trouvé。"
+                },
+                {
+                  title: "Les prépositions de lieu (2)：描述家具和物品的位置",
+                  explanation: "这一单元的位置表达比前面更完整，重点不再只是 dans / sur，而是把房间里的家具关系说清楚。教材高频词是 devant、derrière、sous、en face de、à côté de、entre。它们会频繁出现在摆家具、看房说明和图文匹配里。",
+                  table: [
+                    ["表达", "中文", "例句"],
+                    ["devant", "在……前面", "Le canapé est devant la télévision."],
+                    ["derrière", "在……后面", "La chaise est derrière le bureau."],
+                    ["sous", "在……下面", "Le tapis est sous la table basse."],
+                    ["en face de", "在……对面", "Le salon est en face de la cuisine."],
+                    ["à côté de", "在……旁边", "La lampe est à côté du lit."],
+                    ["entre ... et ...", "在……和……之间", "Le bureau est entre la fenêtre et l'armoire."]
+                  ],
+                  examples: [
+                    { fr: "Le fauteuil est à côté du canapé.", zh: "扶手椅在沙发旁边。" },
+                    { fr: "La table basse est devant le canapé.", zh: "茶几在沙发前面。" },
+                    { fr: "La plante est en face de la fenêtre.", zh: "植物在窗户对面。" },
+                    { fr: "Le tapis est sous la table.", zh: "地毯在桌子下面。" }
+                  ],
+                  pitfall: "中文常用一个'在'就带过，但法语必须明确关系。不要把所有位置都写成 dans，要根据空间关系选 devant、sous、à côté de 等更准确的词。"
+                },
+                {
+                  title: "L'obligation et l'interdiction (1)：楼规、公告和提醒的写法",
+                  explanation: "Édito 在这一单元里把规则表达放到真实楼规里教，不只是一句 il faut。你需要看懂并会写最常见的公告格式：Merci de..., Prière de..., Il est interdit de..., Défense de..., Ne pas...。这些表达在物业公告、合租说明和考试阅读短通知里都非常常见。",
+                  table: [
+                    ["表达", "中文功能", "例句"],
+                    ["Merci de + infinitif", "请……", "Merci de fermer la porte."],
+                    ["Prière de + infinitif", "请务必……", "Prière de respecter le calme."],
+                    ["Il est interdit de + infinitif", "禁止……", "Il est interdit de fumer."],
+                    ["Défense de + infinitif", "严禁……", "Défense de déposer des sacs ici."],
+                    ["Ne pas + infinitif", "请勿……", "Ne pas laisser de vélos dans le couloir."]
+                  ],
+                  examples: [
+                    { fr: "Merci de sortir les poubelles le soir.", zh: "请在晚上把垃圾拿出去。" },
+                    { fr: "Il est interdit de faire du bruit après 22 heures.", zh: "22 点后禁止制造噪音。" },
+                    { fr: "Prière de fermer la porte d'entrée.", zh: "请务必关好大门。" },
+                    { fr: "Ne pas utiliser l'ascenseur pendant les travaux.", zh: "施工期间请勿使用电梯。" }
+                  ],
+                  pitfall: "这些规则表达后面接动词原形，不要错误地加主语或变位。写 Merci de fermer，不能写 Merci de vous fermez。"
+                },
+                {
+                  title: "Les pronoms COD (1)：le, la, l', les",
+                  explanation: "当家里的物品、维修对象或已经提过的名词要再次出现时，教材开始要求你用 COD 代词替换，避免重复。它们放在变位动词前面：le 对应阳性单数，la 对应阴性单数，l' 用于元音前，les 对应复数。",
+                  table: [
+                    ["原句", "替换后", "说明"],
+                    ["Je cherche la clé.", "Je la cherche.", "la clé 阴性单数"],
+                    ["Tu fermes la fenêtre ?", "Tu la fermes ?", "la fenêtre 阴性单数"],
+                    ["Nous réparons le balcon.", "Nous le réparons.", "le balcon 阳性单数"],
+                    ["Ils achètent les lampes.", "Ils les achètent.", "les lampes 复数"]
+                  ],
+                  examples: [
+                    { fr: "Je vois l'annonce, je la lis tout de suite.", zh: "我看到了那则广告，我马上读它。" },
+                    { fr: "Tu prends les clés ? Oui, je les prends.", zh: "你拿钥匙吗？对，我拿。" },
+                    { fr: "Il cherche le plombier, mais il ne le trouve pas.", zh: "他在找水管工，但他没找到。" },
+                    { fr: "Elle ferme la porte et elle la verrouille.", zh: "她关上门，并把它锁好。" }
+                  ],
+                  pitfall: "最常见错误是把代词放到动词后面。标准顺序是 Je la cherche，不是 Je cherche la。否定句同样要写 Je ne la trouve pas。"
+                }
+              ],
+              vocabularyGroups: [
+                {
+                  theme: "住房与房间信息",
+                  words: [
+                    { fr: "la surface", zh: "面积", example: "Quelle est la surface de l'appartement ?", exampleZh: "这套公寓面积多大？" },
+                    { fr: "la pièce", zh: "房间", example: "Il y a trois pièces dans ce logement.", exampleZh: "这套住房里有三个房间。" },
+                    { fr: "le rez-de-chaussée", zh: "底层/一层", example: "Le studio est au rez-de-chaussée.", exampleZh: "这个单间在底层。" },
+                    { fr: "l'étage (m.)", zh: "楼层", example: "Mon appartement est au troisième étage.", exampleZh: "我的公寓在三楼。" },
+                    { fr: "la terrasse", zh: "露台", example: "L'appartement a une petite terrasse.", exampleZh: "这套公寓有一个小露台。" },
+                    { fr: "le jardin", zh: "花园", example: "Il y a un jardin derrière la maison.", exampleZh: "房子后面有一个花园。" },
+                    { fr: "la chambre", zh: "卧室", example: "La chambre est en face du salon.", exampleZh: "卧室在客厅对面。" },
+                    { fr: "la salle de bains", zh: "浴室", example: "La salle de bains est petite mais pratique.", exampleZh: "浴室不大，但很好用。" }
+                  ]
+                },
+                {
+                  theme: "家具、家电与装饰",
+                  words: [
+                    { fr: "le fauteuil", zh: "扶手椅", example: "Le fauteuil est à côté du canapé.", exampleZh: "扶手椅在沙发旁边。" },
+                    { fr: "la table basse", zh: "茶几", example: "Les magazines sont sur la table basse.", exampleZh: "杂志在茶几上。" },
+                    { fr: "l'armoire (f.)", zh: "衣柜", example: "Les chemises sont dans l'armoire.", exampleZh: "衬衫在衣柜里。" },
+                    { fr: "le réfrigérateur / le frigo", zh: "冰箱", example: "Le frigo est entre la cuisinière et l'évier.", exampleZh: "冰箱在炉灶和水槽之间。" },
+                    { fr: "le lave-linge", zh: "洗衣机", example: "Le lave-linge ne marche plus.", exampleZh: "洗衣机坏了。" },
+                    { fr: "la cuisinière", zh: "炉灶", example: "La cuisinière est dans la cuisine.", exampleZh: "炉灶在厨房里。" },
+                    { fr: "la plante", zh: "植物", example: "Il y a une plante devant la fenêtre.", exampleZh: "窗前有一盆植物。" },
+                    { fr: "le tapis", zh: "地毯", example: "Le tapis est sous la table.", exampleZh: "地毯在桌子下面。" }
+                  ]
+                },
+                {
+                  theme: "楼内空间与共居生活",
+                  words: [
+                    { fr: "l'ascenseur (m.)", zh: "电梯", example: "L'ascenseur est à droite du hall.", exampleZh: "电梯在门厅右边。" },
+                    { fr: "le couloir", zh: "走廊", example: "Il ne faut pas laisser de vélos dans le couloir.", exampleZh: "不能把自行车放在走廊里。" },
+                    { fr: "le hall", zh: "门厅", example: "Le règlement est affiché dans le hall.", exampleZh: "规定张贴在门厅里。" },
+                    { fr: "l'escalier (m.)", zh: "楼梯", example: "Les voisins sont dans l'escalier.", exampleZh: "邻居们在楼梯那边。" },
+                    { fr: "le local à poubelles", zh: "垃圾间", example: "Les sacs sont dans le local à poubelles.", exampleZh: "垃圾袋在垃圾间里。" },
+                    { fr: "le local à vélos", zh: "自行车存放间", example: "Prière de ranger les vélos dans le local à vélos.", exampleZh: "请把自行车放进自行车存放间。" },
+                    { fr: "le / la voisin(e)", zh: "邻居", example: "Je vais écrire un message aux voisins.", exampleZh: "我要给邻居们写一张留言。" },
+                    { fr: "le règlement intérieur", zh: "楼内规章", example: "Le règlement intérieur interdit le bruit après 22 heures.", exampleZh: "楼内规章禁止 22 点后制造噪音。" }
+                  ]
+                },
+                {
+                  theme: "故障、维修与专业人员",
+                  words: [
+                    { fr: "la fuite d'eau", zh: "漏水", example: "Il y a une fuite d'eau dans la cuisine.", exampleZh: "厨房里漏水了。" },
+                    { fr: "réparer", zh: "修理", example: "Le plombier va réparer la douche demain.", exampleZh: "水管工明天会来修淋浴。" },
+                    { fr: "fonctionner", zh: "运转、正常工作", example: "Le four ne fonctionne pas.", exampleZh: "烤箱坏了，不能用了。" },
+                    { fr: "marcher", zh: "能用、运作", example: "La machine à laver ne marche plus.", exampleZh: "洗衣机不能用了。" },
+                    { fr: "le plombier", zh: "水管工", example: "Je cherche un plombier pour réparer la fuite.", exampleZh: "我在找水管工来修漏水。" },
+                    { fr: "l'électricien (m.)", zh: "电工", example: "L'électricien vérifie la lampe et la prise.", exampleZh: "电工在检查灯和插座。" },
+                    { fr: "le serrurier", zh: "锁匠", example: "J'appelle un serrurier parce que j'ai perdu mes clés.", exampleZh: "我把钥匙弄丢了，所以叫了锁匠。" },
+                    { fr: "le peintre", zh: "油漆工", example: "Le peintre va refaire le mur du salon.", exampleZh: "油漆工要重新粉刷客厅的墙。" }
+                  ]
+                }
+              ],
+              dictation: {
+                intro: "本单元默写重点：住房词、家具词、过去时、规则表达和报修句型。",
+                groups: [
+                  {
+                    title: "住房与空间词汇默写",
+                    type: "vocab",
+                    items: [
+                      { prompt: "面积", answer: "la surface", hint: "阴性" },
+                      { prompt: "房间", answer: "la pièce", hint: "阴性" },
+                      { prompt: "底层", answer: "le rez-de-chaussée", hint: "固定写法" },
+                      { prompt: "楼层", answer: "l'étage (m.)", hint: "元音开头" },
+                      { prompt: "露台", answer: "la terrasse", hint: "阴性" },
+                      { prompt: "花园", answer: "le jardin", hint: "阳性" },
+                      { prompt: "门厅", answer: "le hall", hint: "阳性" },
+                      { prompt: "走廊", answer: "le couloir", hint: "阳性" }
+                    ]
+                  },
+                  {
+                    title: "家具与维修词汇默写",
+                    type: "vocab",
+                    items: [
+                      { prompt: "扶手椅", answer: "le fauteuil", hint: "阳性" },
+                      { prompt: "茶几", answer: "la table basse", hint: "阴性" },
+                      { prompt: "冰箱", answer: "le réfrigérateur / le frigo", hint: "两种说法" },
+                      { prompt: "洗衣机", answer: "le lave-linge", hint: "阳性" },
+                      { prompt: "漏水", answer: "la fuite d'eau", hint: "固定搭配" },
+                      { prompt: "修理", answer: "réparer", hint: "动词原形" },
+                      { prompt: "水管工", answer: "le plombier", hint: "阳性" },
+                      { prompt: "锁匠", answer: "le serrurier", hint: "阳性" }
+                    ]
+                  },
+                  {
+                    title: "复合过去时默写",
+                    type: "conjugation",
+                    items: [
+                      { prompt: "je + déménager", answer: "j'ai déménagé", hint: "é 结尾" },
+                      { prompt: "nous + visiter", answer: "nous avons visité", hint: "规则动词" },
+                      { prompt: "elle + trouver", answer: "elle a trouvé", hint: "trouvé" },
+                      { prompt: "ils + acheter", answer: "ils ont acheté", hint: "accent" },
+                      { prompt: "je + acheter（否定）", answer: "je n'ai pas acheté", hint: "ne...pas" },
+                      { prompt: "vous + trouver（否定）", answer: "vous n'avez pas trouvé", hint: "助动词否定" }
+                    ]
+                  },
+                  {
+                    title: "规则与报修句型默写",
+                    type: "phrases",
+                    items: [
+                      { prompt: "请关好大门。", answer: "Merci de fermer la porte d'entrée.", hint: "Merci de" },
+                      { prompt: "22点后禁止制造噪音。", answer: "Il est interdit de faire du bruit après 22 heures.", hint: "interdit de" },
+                      { prompt: "请勿把自行车放在走廊里。", answer: "Ne pas laisser de vélos dans le couloir.", hint: "Ne pas" },
+                      { prompt: "厨房里漏水了。", answer: "Il y a une fuite d'eau dans la cuisine.", hint: "固定搭配" },
+                      { prompt: "我在找水管工来修它。", answer: "Je cherche un plombier pour la réparer.", hint: "la = la fuite" },
+                      { prompt: "我把钥匙丢了，所以我叫了锁匠。", answer: "J'ai perdu mes clés, alors j'ai appelé un serrurier.", hint: "过去时" }
+                    ]
+                  }
+                ]
+              },
+              phonetique: "本单元要注意三点：第一，过去时里助动词和过去分词要连成一个节奏组，如 j'ai trouvé、nous avons acheté；第二，位置短语要整体朗读，像 à côté de、en face de 不要逐词切开；第三，COD 代词要弱读，Je la cherche、Je les prends 里的代词不能重读。",
+              tcf: "TCF Canada 阅读里常见租房广告、物业公告、楼规提醒、报修短消息。考点往往不是复杂语法，而是你能不能快速识别房间、设备、禁令和故障信息。掌握过去时、位置词、规则表达和 COD 代词，会明显提升生活类材料的定位速度。"
             },
             exercises: [
-              { type: "填空", prompt: "La table est _____ la cuisine.", answer: "dans" },
-              { type: "改错", prompt: "Corrigez : Je le cherche mes clés.", answer: "Je cherche mes clés. / Je les cherche." },
-              { type: "表达", prompt: "用 4 句话描述你的房间或理想住房。", answer: "开放题，检查房间词汇和位置表达。" }
+              {
+                type: "复合过去时填空",
+                instruction: "把括号里的动词变成 passé composé，保持句意完整。",
+                items: [
+                  { prompt: "Hier, nous (visiter) _____ un appartement au centre-ville.", answer: "avons visité", explanation: "visiter 是规则动词，用 avoir + visité。" },
+                  { prompt: "Elle (trouver) _____ un studio avec balcon.", answer: "a trouvé", explanation: "trouver 的过去分词是 trouvé。" },
+                  { prompt: "J' (acheter) _____ une lampe et un tapis.", answer: "ai acheté", explanation: "acheter 的过去分词写作 acheté。" },
+                  { prompt: "Ils (déménager) _____ samedi dernier.", answer: "ont déménagé", explanation: "déménager 这里用 avoir 作助动词。" },
+                  { prompt: "Tu (ne pas visiter) _____ la maison ?", answer: "n'as pas visité", explanation: "否定包住助动词：tu n'as pas visité。" }
+                ]
+              },
+              {
+                type: "位置介词填空",
+                instruction: "根据家具关系填入最合适的位置表达：devant / derrière / sous / en face de / à côté de / entre。",
+                items: [
+                  { prompt: "Le canapé est _____ la télévision.", answer: "devant", explanation: "沙发在电视前面，用 devant。" },
+                  { prompt: "La lampe est _____ le lit.", answer: "à côté de", explanation: "灯在床旁边，用 à côté de。" },
+                  { prompt: "Le tapis est _____ la table basse.", answer: "sous", explanation: "地毯在茶几下面，用 sous。" },
+                  { prompt: "Le salon est _____ la cuisine.", answer: "en face de", explanation: "客厅在厨房对面。" },
+                  { prompt: "Le bureau est _____ la fenêtre et l'armoire.", answer: "entre", explanation: "在两者之间用 entre ... et ..." },
+                  { prompt: "La chaise est _____ le bureau.", answer: "derrière", explanation: "椅子在书桌后面，用 derrière。" }
+                ]
+              },
+              {
+                type: "规则表达改写",
+                instruction: "把中文规则改写成最自然的法语公告句，可以使用 Merci de / Prière de / Il est interdit de / Ne pas。",
+                items: [
+                  { prompt: "请关门。", answer: "Merci de fermer la porte.", explanation: "礼貌提示最常用 Merci de + 原形。" },
+                  { prompt: "请务必保持安静。", answer: "Prière de respecter le calme.", explanation: "更正式的公告可用 Prière de。" },
+                  { prompt: "禁止在楼道里抽烟。", answer: "Il est interdit de fumer dans le couloir.", explanation: "禁止行为用 Il est interdit de。" },
+                  { prompt: "请勿把垃圾袋放在门口。", answer: "Ne pas laisser de sacs-poubelle devant la porte.", explanation: "简短警示常用 Ne pas + 原形。" },
+                  { prompt: "严禁把自行车停在门厅。", answer: "Défense de laisser des vélos dans le hall.", explanation: "Défense de 用于更强的禁令。" }
+                ]
+              },
+              {
+                type: "COD 代词替换",
+                instruction: "用 le / la / l' / les 改写第二句，避免重复名词。",
+                items: [
+                  { prompt: "Je cherche la clé. → Je _____ cherche.", answer: "la", explanation: "la clé 阴性单数，用 la。" },
+                  { prompt: "Tu fermes la fenêtre ? → Tu _____ fermes ?", answer: "la", explanation: "la fenêtre 阴性单数，用 la。" },
+                  { prompt: "Nous réparons le balcon. → Nous _____ réparons.", answer: "le", explanation: "le balcon 阳性单数，用 le。" },
+                  { prompt: "Ils achètent les lampes. → Ils _____ achètent.", answer: "les", explanation: "les lampes 复数，用 les。" },
+                  { prompt: "Je lis l'annonce. → Je _____ lis.", answer: "l'", explanation: "annonce 元音开头，用 l'。" }
+                ]
+              },
+              {
+                type: "语法填空",
+                instruction: "阅读下面的居家消息，在空格处填入正确词语或形式。",
+                passage: "Bonjour les voisins, je suis désolé(e) pour le bruit d'hier soir. Nous avons (1)_____ dans notre nouvel appartement et nous avons (2)_____ quelques meubles. Le canapé est maintenant (3)_____ la télévision, et la table basse est (4)_____ le canapé. Dans l'immeuble, il est interdit de (5)_____ du bruit après 22 heures, je le sais bien. Ce matin, j'ai aussi remarqué une fuite d'eau dans la cuisine. Je cherche un plombier pour (6)_____ réparer. En attendant, merci de (7)_____ la porte d'entrée et de ne pas (8)_____ de sacs dans le couloir.",
+                items: [
+                  { blank: 1, answer: "déménagé", explanation: "这里用 passé composé：avons déménagé。" },
+                  { blank: 2, answer: "acheté", explanation: "acheter 的过去分词是 acheté。" },
+                  { blank: 3, answer: "devant", explanation: "沙发在电视前面。" },
+                  { blank: 4, answer: "devant", explanation: "茶几在沙发前面。" },
+                  { blank: 5, answer: "faire", explanation: "Il est interdit de 后接动词原形。" },
+                  { blank: 6, answer: "la", explanation: "la 替代 la fuite d'eau。" },
+                  { blank: 7, answer: "fermer", explanation: "Merci de 后接原形。" },
+                  { blank: 8, answer: "laisser", explanation: "de ne pas 后接动词原形。" }
+                ]
+              },
+              {
+                type: "表达练习",
+                instruction: "根据场景写 50-80 词。你刚搬进新住处，要给邻居写一张简短留言：先道歉，再说明你搬家做了什么、家里哪里有问题，以及你会遵守哪条楼规。至少包含 1 个 passé composé、1 个位置表达、1 个规则表达、1 个 COD 代词。",
+                items: [
+                  {
+                    prompt: "给邻居写一张道歉兼说明留言。",
+                    modelAnswer: "Bonjour, je suis désolé(e) pour le bruit d'hier soir. Nous avons déménagé samedi et nous avons acheté quelques meubles. Le canapé est maintenant devant la télévision et la lampe est à côté du lit. Il y a aussi une fuite d'eau dans la cuisine, alors je cherche un plombier pour la réparer. À partir d'aujourd'hui, il est interdit de faire du bruit après 22 heures et nous allons respecter cette règle.",
+                    keyPoints: [
+                      "写出道歉开头",
+                      "至少使用一个 passé composé",
+                      "至少使用一个位置表达",
+                      "至少写出一条规则表达",
+                      "用 COD 代词替代已经提过的名词",
+                      "信息顺序清楚，像真实留言"
+                    ]
+                  }
+                ]
+              }
             ]
           },
           {
             id: "a1-u8",
             code: "Unité 8",
             title: "En forme !",
-            focus: "身体、健康、症状、建议、运动与情绪表达",
+            focus: "情绪、身体状况、看病、运动健康、义务禁止与建议",
             lecture: {
-              summary: "健康是很典型的生活主题，也常和建议句型一起考。",
-              canDo: ["描述不舒服", "说身体部位", "给出简单建议"],
-              grammar: ["passé composé 入门", "devoir 表示义务", "建议表达"],
-              vocabulary: ["tête, ventre, dos", "maladie, médecin, médicament", "être fatigué, stressé"],
-              tcf: "适合看病、建议、健康提示类材料。"
+              summary: "第 8 单元把健康和运动放在同一条主线上：先说自己状态好不好、哪里不舒服，再继续学习去看医生、说体重身高、理解健身房规则、表达同意不同意、给出建议。教材这单元很实用，因为它同时覆盖身体、情绪、医疗和日常健康习惯。学完后，你能更完整地描述自己的状态，也能理解别人给出的建议和限制。",
+              canDo: [
+                "表达积极或消极情绪，如 en forme、fatigué(e)、inquiet / inquiète",
+                "用 avoir mal à + 身体部位说症状",
+                "询问和说明体重、身高",
+                "用 passé composé 说明昨天做过的健康相关事情",
+                "用 y 替代去药店、去医生那里、去健身房等地点",
+                "用 devoir、il faut 和 conseil 句型给出基础建议"
+              ],
+              grammarSections: [
+                {
+                  title: "avoir mal à + 身体部位：表达哪里不舒服",
+                  explanation: "本单元健康表达的核心结构还是 avoir mal à。关键不只是背单词，而是根据身体部位的性数变化成 au / à la / à l' / aux。看病、问候、说明症状时都会反复用到这一结构。",
+                  table: [
+                    ["类型", "结构", "例句"],
+                    ["阳性单数", "avoir mal au", "J'ai mal au dos."],
+                    ["阴性单数", "avoir mal à la", "J'ai mal à la tête."],
+                    ["元音开头", "avoir mal à l'", "Il a mal à l'oreille."],
+                    ["复数", "avoir mal aux", "Elle a mal aux jambes."]
+                  ],
+                  examples: [
+                    { fr: "J'ai mal à la gorge depuis hier.", zh: "我从昨天开始喉咙疼。" },
+                    { fr: "Il a mal au ventre après le repas.", zh: "他饭后肚子疼。" },
+                    { fr: "Elle a mal aux yeux après l'ordinateur.", zh: "她看完电脑后眼睛疼。" },
+                    { fr: "Nous avons mal au dos après le sport.", zh: "我们运动后背疼。" }
+                  ],
+                  pitfall: "不要把 être 和 mal 混在一起说。法语要写 J'ai mal à la tête，不能写 Je suis mal à la tête。"
+                },
+                {
+                  title: "Le passé composé (2)：高频不规则过去分词与 être 的 aller",
+                  explanation: "这一单元的 passé composé 比前一单元更进一步，重点是记住一些非常高频的不规则过去分词：eu、été、fait、pris、pu。同时教材也提醒你，aller 在过去时用 être：je suis allé(e)。这些形式在健康和出行场景里非常常见。",
+                  table: [
+                    ["动词原形", "过去分词", "例句"],
+                    ["avoir", "eu", "J'ai eu mal au dos."],
+                    ["être", "été", "Il a été très fatigué."],
+                    ["faire", "fait", "Nous avons fait du sport."],
+                    ["prendre", "pris", "Elle a pris du paracétamol."],
+                    ["pouvoir", "pu", "Tu as pu dormir ?"],
+                    ["aller", "allé(e)", "Je suis allé(e) chez le médecin."]
+                  ],
+                  examples: [
+                    { fr: "J'ai eu de la fièvre hier soir.", zh: "我昨晚发烧了。" },
+                    { fr: "Elle a pris un sirop contre la toux.", zh: "她喝了止咳糖浆。" },
+                    { fr: "Nous avons fait du yoga dimanche.", zh: "我们周日做了瑜伽。" },
+                    { fr: "Je suis allé(e) à la pharmacie ce matin.", zh: "我今天早上去了药店。" }
+                  ],
+                  pitfall: "aller 是这一课的例外重点，过去时不能写 j'ai allé。必须写 je suis allé / je suis allée。"
+                },
+                {
+                  title: "Le pronom y：替换已经提过的地点",
+                  explanation: "当你已经说过 à la pharmacie、chez le médecin、au gymnase 之类的地点，后面就可以用 y 代替。y 放在变位动词前面，否定时仍然夹在 ne ... pas 之间。这是让句子更自然、更像真实口语的关键一步。",
+                  table: [
+                    ["原句", "替换后", "说明"],
+                    ["Je vais à la pharmacie.", "J'y vais.", "y 替代 à la pharmacie"],
+                    ["Tu vas chez le dentiste ?", "Tu y vas ?", "y 也可代替 chez + 人"],
+                    ["Nous allons au gymnase.", "Nous y allons.", "y 替代 au gymnase"],
+                    ["Je n'y vais pas.", "否定形式", "ne ... pas 包住 y 和动词"]
+                  ],
+                  examples: [
+                    { fr: "Je vais chez le médecin à 15 heures. J'y vais en bus.", zh: "我 15 点去看医生。我坐公交去那里。" },
+                    { fr: "Tu vas à la pharmacie ? Oui, j'y vais maintenant.", zh: "你去药店吗？对，我现在就去。" },
+                    { fr: "Nous n'y allons pas aujourd'hui.", zh: "我们今天不去那里。" },
+                    { fr: "Elle y va deux fois par semaine.", zh: "她每周去那里两次。" }
+                  ],
+                  pitfall: "法语里不能把 y 放到句尾。标准语序是 J'y vais，不是 Je vais y。"
+                },
+                {
+                  title: "L'obligation, l'interdiction (2) et le conseil：devoir、il faut、命令式、pouvoir",
+                  explanation: "教材把规则和建议拆得更细。规则层面，你要会 il faut、il ne faut pas、tu dois、tu ne dois pas。建议层面，教材强调可以用命令式和 pouvoir + infinitif，比如 Bouge un peu !、Tu peux marcher 30 minutes par jour. 同时还会配合同意或不同意表达：Tu as raison / Je ne suis pas d'accord。",
+                  table: [
+                    ["功能", "结构", "例句"],
+                    ["义务", "il faut + infinitif", "Il faut boire de l'eau."],
+                    ["义务", "tu dois + infinitif", "Tu dois te reposer."],
+                    ["禁止", "il ne faut pas + infinitif", "Il ne faut pas fumer ici."],
+                    ["禁止", "tu ne dois pas + infinitif", "Tu ne dois pas manger trop sucré."],
+                    ["建议", "impératif", "Mange plus léger !"],
+                    ["建议", "tu peux + infinitif", "Tu peux marcher chaque jour."]
+                  ],
+                  examples: [
+                    { fr: "Au gymnase, il faut apporter sa serviette de bain.", zh: "去健身房必须带自己的浴巾。" },
+                    { fr: "Tu ne dois pas faire du sport ce soir.", zh: "你今晚不该运动。" },
+                    { fr: "Bouge un peu chaque jour !", zh: "每天都动一动！" },
+                    { fr: "Tu peux aller marcher après le dîner.", zh: "你晚饭后可以去散步。" }
+                  ],
+                  pitfall: "建议和义务不要全部混成 il faut。A1 阶段至少要能区分：规则可用 il faut / devoir，建议可用 impératif 或 pouvoir，更符合教材原结构。"
+                }
+              ],
+              vocabularyGroups: [
+                {
+                  theme: "身体部位与基础症状",
+                  words: [
+                    { fr: "le dos", zh: "背", example: "J'ai mal au dos aujourd'hui.", exampleZh: "我今天背疼。" },
+                    { fr: "la gorge", zh: "喉咙", example: "Elle a mal à la gorge depuis ce matin.", exampleZh: "她从今天早上开始喉咙疼。" },
+                    { fr: "la jambe", zh: "腿", example: "Il a mal à la jambe après le match.", exampleZh: "比赛后他腿疼。" },
+                    { fr: "la tête", zh: "头", example: "Quand je suis stressée, j'ai mal à la tête.", exampleZh: "我有压力时会头疼。" },
+                    { fr: "le ventre", zh: "肚子", example: "Tu as mal au ventre ?", exampleZh: "你肚子疼吗？" },
+                    { fr: "la fièvre", zh: "发烧", example: "J'ai eu de la fièvre hier soir.", exampleZh: "我昨晚发烧了。" },
+                    { fr: "la toux", zh: "咳嗽", example: "Cette toux ne passe pas.", exampleZh: "这阵咳嗽一直不好。" },
+                    { fr: "le rhume", zh: "感冒", example: "Il a un rhume et il reste à la maison.", exampleZh: "他感冒了，所以待在家里。" }
+                  ]
+                },
+                {
+                  theme: "情绪、状态与表达同意不同意",
+                  words: [
+                    { fr: "en forme", zh: "状态好", example: "Aujourd'hui, je me sens en forme.", exampleZh: "今天我感觉状态不错。" },
+                    { fr: "fatigué(e)", zh: "累的", example: "Après le travail, je suis très fatiguée.", exampleZh: "下班后我很累。" },
+                    { fr: "inquiet / inquiète", zh: "担心的", example: "Je suis inquiète pour ma santé.", exampleZh: "我担心自己的身体。" },
+                    { fr: "stressé(e)", zh: "紧张的、有压力的", example: "Avant l'examen, il est stressé.", exampleZh: "考试前他很紧张。" },
+                    { fr: "content(e)", zh: "高兴的", example: "Je suis contente parce que je vais mieux.", exampleZh: "我很高兴，因为我好多了。" },
+                    { fr: "triste", zh: "难过的", example: "Elle est triste aujourd'hui.", exampleZh: "她今天很难过。" },
+                    { fr: "Tu as raison.", zh: "你说得对。", example: "Tu as raison, il faut dormir plus tôt.", exampleZh: "你说得对，应该早点睡。" },
+                    { fr: "Je ne suis pas d'accord.", zh: "我不同意。", example: "Je ne suis pas d'accord : ce n'est pas une bonne idée.", exampleZh: "我不同意，这不是个好主意。" }
+                  ]
+                },
+                {
+                  theme: "医疗地点、药物与职业",
+                  words: [
+                    { fr: "la pharmacie", zh: "药店", example: "Je vais à la pharmacie après le travail.", exampleZh: "我下班后去药店。" },
+                    { fr: "l'hôpital (m.)", zh: "医院", example: "L'hôpital est près de la gare.", exampleZh: "医院在火车站附近。" },
+                    { fr: "le paracétamol", zh: "对乙酰氨基酚", example: "Le médecin conseille le paracétamol.", exampleZh: "医生建议吃对乙酰氨基酚。" },
+                    { fr: "le sirop", zh: "糖浆", example: "J'ai pris un sirop contre la toux.", exampleZh: "我喝了止咳糖浆。" },
+                    { fr: "la radio", zh: "X 光片", example: "Le médecin demande une radio.", exampleZh: "医生要求拍一张 X 光片。" },
+                    { fr: "le médecin", zh: "医生", example: "Je suis allé(e) chez le médecin ce matin.", exampleZh: "我今天早上去看医生了。" },
+                    { fr: "le dentiste", zh: "牙医", example: "Elle va chez le dentiste mercredi.", exampleZh: "她周三去看牙医。" },
+                    { fr: "le pharmacien / la pharmacienne", zh: "药剂师", example: "La pharmacienne explique comment prendre le médicament.", exampleZh: "女药剂师解释了该怎么吃药。" }
+                  ]
+                },
+                {
+                  theme: "运动、饮食与健康习惯",
+                  words: [
+                    { fr: "l'activité physique (f.)", zh: "体育活动", example: "L'activité physique est bonne pour la santé.", exampleZh: "体育活动对健康有好处。" },
+                    { fr: "le gymnase", zh: "健身房", example: "Je vais au gymnase deux fois par semaine.", exampleZh: "我每周去两次健身房。" },
+                    { fr: "la serviette de bain", zh: "浴巾", example: "Il faut apporter sa serviette de bain.", exampleZh: "必须带自己的浴巾。" },
+                    { fr: "la marche", zh: "步行、散步", example: "La marche quotidienne fait du bien.", exampleZh: "每天散步有益健康。" },
+                    { fr: "le yoga", zh: "瑜伽", example: "Le samedi, nous faisons du yoga.", exampleZh: "我们周六做瑜伽。" },
+                    { fr: "la natation", zh: "游泳", example: "La natation aide à se détendre.", exampleZh: "游泳有助于放松。" },
+                    { fr: "l'alimentation saine (f.)", zh: "健康饮食", example: "Une alimentation saine aide à rester en forme.", exampleZh: "健康饮食有助于保持好状态。" },
+                    { fr: "le produit sucré", zh: "甜食/含糖食品", example: "Tu ne dois pas manger trop de produits sucrés.", exampleZh: "你不该吃太多甜食。" }
+                  ]
+                }
+              ],
+              dictation: {
+                intro: "本单元默写重点：身体与情绪词、过去分词、y 句型、规则和建议表达。",
+                groups: [
+                  {
+                    title: "身体与状态词汇默写",
+                    type: "vocab",
+                    items: [
+                      { prompt: "背", answer: "le dos", hint: "阳性" },
+                      { prompt: "喉咙", answer: "la gorge", hint: "阴性" },
+                      { prompt: "腿", answer: "la jambe", hint: "阴性" },
+                      { prompt: "头", answer: "la tête", hint: "阴性" },
+                      { prompt: "发烧", answer: "la fièvre", hint: "阴性" },
+                      { prompt: "咳嗽", answer: "la toux", hint: "阴性" },
+                      { prompt: "累的", answer: "fatigué(e)", hint: "形容词" },
+                      { prompt: "担心的", answer: "inquiet / inquiète", hint: "阴阳形式" }
+                    ]
+                  },
+                  {
+                    title: "医疗与运动词汇默写",
+                    type: "vocab",
+                    items: [
+                      { prompt: "药店", answer: "la pharmacie", hint: "阴性" },
+                      { prompt: "医院", answer: "l'hôpital (m.)", hint: "元音开头" },
+                      { prompt: "糖浆", answer: "le sirop", hint: "阳性" },
+                      { prompt: "X 光片", answer: "la radio", hint: "阴性" },
+                      { prompt: "牙医", answer: "le dentiste", hint: "阳性" },
+                      { prompt: "药剂师（女）", answer: "la pharmacienne", hint: "阴性" },
+                      { prompt: "步行、散步", answer: "la marche", hint: "阴性" },
+                      { prompt: "健康饮食", answer: "l'alimentation saine (f.)", hint: "固定搭配" }
+                    ]
+                  },
+                  {
+                    title: "过去时与 y 默写",
+                    type: "phrases",
+                    items: [
+                      { prompt: "我昨晚发烧了。", answer: "J'ai eu de la fièvre hier soir.", hint: "eu" },
+                      { prompt: "她喝了止咳糖浆。", answer: "Elle a pris un sirop contre la toux.", hint: "pris" },
+                      { prompt: "我们周日做了瑜伽。", answer: "Nous avons fait du yoga dimanche.", hint: "fait" },
+                      { prompt: "我今天早上去了药店。", answer: "Je suis allé(e) à la pharmacie ce matin.", hint: "aller + être" },
+                      { prompt: "我去看医生了。我坐公交去那里。", answer: "Je suis allé(e) chez le médecin. J'y suis allé(e) en bus.", hint: "y 替代地点" },
+                      { prompt: "我今天不去那里。", answer: "Je n'y vais pas aujourd'hui.", hint: "否定位置" }
+                    ]
+                  },
+                  {
+                    title: "规则与建议句型默写",
+                    type: "phrases",
+                    items: [
+                      { prompt: "必须多喝水。", answer: "Il faut boire plus d'eau.", hint: "il faut" },
+                      { prompt: "你得休息。", answer: "Tu dois te reposer.", hint: "devoir" },
+                      { prompt: "你今晚不该做运动。", answer: "Tu ne dois pas faire du sport ce soir.", hint: "否定 devoir" },
+                      { prompt: "去健身房必须带浴巾。", answer: "Il faut apporter sa serviette de bain au gymnase.", hint: "规则" },
+                      { prompt: "每天动一动吧！", answer: "Bouge un peu chaque jour !", hint: "命令式建议" },
+                      { prompt: "你可以晚饭后散步。", answer: "Tu peux marcher après le dîner.", hint: "pouvoir + 原形" }
+                    ]
+                  }
+                ]
+              },
+              phonetique: "本单元要重点注意三类连读和节奏。第一，avoir mal à + 冠词要整体读，如 mal au dos、mal à la gorge、mal aux jambes。第二，passé composé 要把助动词和分词连起来读，如 j'ai eu、elle a pris、nous avons fait。第三，J'y vais 里的 y 很轻，不能像重读单词那样单独拉长。",
+              tcf: "TCF Canada 的健康和生活方式材料很常见，尤其爱考症状、医生建议、药物、规则和个人习惯。听力里常出现看病对话，阅读里常出现健身房规则或饮食建议。掌握 avoir mal à、过去时、y 和 conseil 句型后，理解信息和做口语表达都会更稳。"
             },
             exercises: [
-              { type: "填空", prompt: "J'ai mal _____ tête. Tu dois _____ médecin.", answer: "à la / voir un" },
-              { type: "选择", prompt: "给建议哪句更自然？ A. Tu dois te reposer. B. Tu reposes.", answer: "A. Tu dois te reposer." },
-              { type: "表达", prompt: "写 3 句说明你不舒服并向朋友求建议。", answer: "开放题，检查症状和建议表达。" }
+              {
+                type: "症状结构填空",
+                instruction: "根据身体部位写出正确形式：au / à la / à l' / aux。",
+                items: [
+                  { prompt: "J'ai mal _____ tête.", answer: "à la", explanation: "tête 是阴性单数，用 à la。" },
+                  { prompt: "Il a mal _____ dos.", answer: "au", explanation: "dos 是阳性单数，à + le = au。" },
+                  { prompt: "Elle a mal _____ oreille.", answer: "à l'", explanation: "oreille 元音开头，用 à l'。" },
+                  { prompt: "Nous avons mal _____ jambes.", answer: "aux", explanation: "jambes 是复数，à + les = aux。" },
+                  { prompt: "Tu as mal _____ ventre ?", answer: "au", explanation: "ventre 是阳性单数，用 au。" }
+                ]
+              },
+              {
+                type: "过去分词选择",
+                instruction: "把括号里的动词改成正确的 passé composé。",
+                items: [
+                  { prompt: "Hier soir, j' (avoir) _____ de la fièvre.", answer: "ai eu", explanation: "avoir 的过去分词是 eu。" },
+                  { prompt: "Elle (prendre) _____ un sirop contre la toux.", answer: "a pris", explanation: "prendre 的过去分词是 pris。" },
+                  { prompt: "Nous (faire) _____ du yoga dimanche.", answer: "avons fait", explanation: "faire 的过去分词是 fait。" },
+                  { prompt: "Tu (pouvoir) _____ dormir cette nuit ?", answer: "as pu", explanation: "pouvoir 的过去分词是 pu。" },
+                  { prompt: "Je (aller) _____ chez le médecin ce matin.", answer: "suis allé(e)", explanation: "aller 在 passé composé 里用 être。" }
+                ]
+              },
+              {
+                type: "y 代词改写",
+                instruction: "用 y 替换已经出现的地点。",
+                items: [
+                  { prompt: "Je vais à la pharmacie. → J'_____ vais.", answer: "y", explanation: "y 替代 à la pharmacie。" },
+                  { prompt: "Tu vas chez le dentiste ? → Tu _____ vas ?", answer: "y", explanation: "y 可以替代 chez + 人。" },
+                  { prompt: "Nous allons au gymnase chaque jeudi. → Nous _____ allons chaque jeudi.", answer: "y", explanation: "y 替代 au gymnase。" },
+                  { prompt: "Je ne vais pas à l'hôpital aujourd'hui. → Je n'_____ vais pas aujourd'hui.", answer: "y", explanation: "否定时 y 放在动词前。" },
+                  { prompt: "Elle va à la pharmacie après le cours. → Elle _____ va après le cours.", answer: "y", explanation: "y 替代 à la pharmacie。" }
+                ]
+              },
+              {
+                type: "义务、禁止与建议",
+                instruction: "根据情境选择最自然的表达：il faut / tu dois / tu ne dois pas / impératif / tu peux。",
+                items: [
+                  { prompt: "朋友发烧了，你说：_____ boire de l'eau.", answer: "Il faut", explanation: "一般建议或义务最自然用 il faut。" },
+                  { prompt: "同伴今天很累，你说：Tu _____ te reposer.", answer: "dois", explanation: "针对对方的明确建议可用 tu dois。" },
+                  { prompt: "腿疼还想跑步，你说：Tu _____ faire du sport ce soir.", answer: "ne dois pas", explanation: "禁止或强烈不建议用 ne dois pas。" },
+                  { prompt: "鼓励朋友每天动一动：_____ un peu chaque jour !", answer: "Bouge", explanation: "教材建议里可以直接用命令式。" },
+                  { prompt: "给比较温和的建议：Tu _____ marcher 30 minutes par jour.", answer: "peux", explanation: "pouvoir + 原形表示较温和的建议。" }
+                ]
+              },
+              {
+                type: "语法填空",
+                instruction: "阅读下面的健康对话，在空格里填入最恰当的词或形式。",
+                passage: "— Salut, ça va ? — Pas très bien. J'ai mal (1)_____ gorge et j'ai eu de la fièvre hier soir. — Tu as (2)_____ du paracétamol ? — Oui, j'en ai pris ce matin. À 16 heures, je vais chez le médecin et j' (3)_____ vais en métro. — Tu as bien fait. Tu (4)_____ te reposer aujourd'hui et tu ne (5)_____ pas faire de sport. — Oui, tu as raison. Hier, nous avons (6)_____ du yoga, puis je suis (7)_____ à la pharmacie. — D'accord. Et ce soir, mange plus léger : tu peux éviter les produits trop (8)_____.",
+                items: [
+                  { blank: 1, answer: "à la", explanation: "gorge 是阴性单数，用 à la。" },
+                  { blank: 2, answer: "pris", explanation: "prendre 的过去分词是 pris。" },
+                  { blank: 3, answer: "y", explanation: "y 替代 chez le médecin。" },
+                  { blank: 4, answer: "dois", explanation: "tu dois + 原形。" },
+                  { blank: 5, answer: "dois", explanation: "否定是 tu ne dois pas。" },
+                  { blank: 6, answer: "fait", explanation: "faire 的过去分词是 fait。" },
+                  { blank: 7, answer: "allé(e)", explanation: "aller 在过去时用 être。" },
+                  { blank: 8, answer: "sucrés", explanation: "produits 是复数，形容词也用复数。" }
+                ]
+              },
+              {
+                type: "表达练习",
+                instruction: "根据场景写 50-80 词。你要给朋友发消息，说明自己今天的身体状态、昨天做过的事、接下来要去哪里，并写出两条健康建议。至少包含 1 个 avoir mal à、1 个 passé composé、1 个 y、1 句 devoir 或 il faut、1 句 conseil。",
+                items: [
+                  {
+                    prompt: "给朋友发一条健康近况消息。",
+                    modelAnswer: "Salut, je ne suis pas en forme aujourd'hui. J'ai mal à la gorge et au dos. Hier, j'ai eu de la fièvre et j'ai pris du paracétamol. Cet après-midi, je vais chez le médecin et j'y vais en métro. Après, je vais passer à la pharmacie. Le médecin dit : il faut boire beaucoup d'eau et tu dois te reposer. Et moi, je pense aussi : marche un peu demain, mais pas ce soir.",
+                    keyPoints: [
+                      "至少写一个 avoir mal à 结构",
+                      "至少写一个 passé composé",
+                      "正确使用 y 替代地点",
+                      "包含一条义务或禁止表达",
+                      "包含一条建议表达",
+                      "内容像真实消息，不只是罗列句子"
+                    ]
+                  }
+                ]
+              }
             ]
           },
           {
             id: "a1-u9",
             code: "Unité 9",
             title: "Bonnes vacances !",
-            focus: "旅游、订房、地点描述、比较与过去经历",
+            focus: "订房、旅行目的地、风景描写、偏好表达、过去假期经历与明信片写作",
             lecture: {
-              summary: "旅行类词汇和场景在 TCF 阅读里很常见，也适合做说明文练习。",
-              canDo: ["询问酒店信息", "描述旅行地", "写简单明信片"],
-              grammar: ["比较级", "地点介词扩展", "être + aller 的过去时基础"],
-              vocabulary: ["voyage, hôtel, réservation", "mer, montagne, ville", "plus... que, moins... que"],
-              tcf: "适合旅游广告、酒店信息、行程安排类阅读。"
+              summary: "Unité 9 把 A1 前面学过的地点、天气、活动和过去时真正放进旅行场景里。你要学会的不只是说“我去过哪里”，而是能完成一次最基础的旅行沟通：订房、说明目的地、比较几种假期、描述看到的风景，并在旅行结束后写一张简短的明信片。这一单元和 TCF Canada 里很常见的旅游广告、酒店预订、景点介绍、天气与行程短文高度相关。",
+              canDo: [
+                "用法语询问并预订最基础的酒店房间信息",
+                "说出一个人来自哪个城市或国家、刚从哪里回来",
+                "用 plus / moins / aussi ... que 比较酒店、城市、交通或假期方式",
+                "描述海边、乡村、山地、湖边等基础自然景观",
+                "用 passé composé avec être 说自己去了哪里、回来了没有",
+                "用 c'était / il y avait / il faisait 描写过去旅行中的背景、景色和天气",
+                "表达自己更喜欢哪一种假期",
+                "写一张内容完整但简短的旅行明信片"
+              ],
+              grammarSections: [
+                {
+                  title: "比较级：plus / moins / aussi ... que",
+                  explanation: "这一单元的比较不是抽象语法，而是直接拿来比较酒店、城市、交通和假期体验。最常用的三种结构是 plus ... que（更……）、moins ... que（没那么……）、aussi ... que（和……一样……）。A1 阶段先把结构说稳，比追求复杂句更重要。",
+                  table: [
+                    ["结构", "意思", "例句"],
+                    ["plus + adjectif + que", "更……", "Cet hôtel est plus calme que l'autre."],
+                    ["moins + adjectif + que", "没那么……", "La montagne est moins chaude que la mer."],
+                    ["aussi + adjectif + que", "和……一样……", "La chambre simple est aussi confortable que la double."],
+                    ["meilleur(e) que", "比……更好", "Ce restaurant est meilleur que celui de la plage."]
+                  ],
+                  examples: [
+                    { fr: "L'hôtel du centre est plus cher que le camping.", zh: "市中心的酒店比露营地更贵。" },
+                    { fr: "La campagne est moins bruyante que la ville.", zh: "乡村没有城市那么吵。" },
+                    { fr: "Cette plage est aussi belle que celle de Nice.", zh: "这个海滩和尼斯的那个一样漂亮。" },
+                    { fr: "Pour moi, les vacances à la mer sont meilleures que les vacances à la montagne.", zh: "对我来说，海边假期比山里假期更好。" }
+                  ],
+                  pitfall: "中文里常省略比较对象，但法语里比较级后面通常要把 que + 对比对象说出来。另一个高频错误是把 bon 直接说成 plus bon，正确形式是 meilleur。"
+                },
+                {
+                  title: "城市和国家前的来源介词：de / d' / du / des",
+                  explanation: "前面你学过“在哪里”用 à / en / au / aux，这一单元继续学“从哪里来、从哪里回来”。城市前通常用 de，元音开头用 d'，阳性国家用 du，复数国家用 des，阴性或元音开头的国家一般仍用 de / d'。",
+                  table: [
+                    ["地点类型", "来源介词", "例句"],
+                    ["城市", "de", "Je reviens de Paris."],
+                    ["元音开头城市", "d'", "Elle arrive d'Avignon."],
+                    ["阳性国家", "du", "Ils rentrent du Canada."],
+                    ["阴性国家", "de", "Nous revenons de France."],
+                    ["元音开头国家", "d'", "Tu arrives d'Italie ?"],
+                    ["复数国家", "des", "Il revient des États-Unis."]
+                  ],
+                  examples: [
+                    { fr: "Je suis de Lyon, mais je reviens du Maroc.", zh: "我来自里昂，但我刚从摩洛哥回来。" },
+                    { fr: "Elle vient d'Italie et son ami vient de Belgique.", zh: "她来自意大利，而她朋友来自比利时。" },
+                    { fr: "Nous revenons des Pays-Bas après une semaine de vacances.", zh: "我们度假一周后从荷兰回来了。" }
+                  ],
+                  pitfall: "很多中文母语者会把所有国家都说成 de。要特别记住阳性国家是 du，复数国家是 des，比如 du Canada、des États-Unis。"
+                },
+                {
+                  title: "Le passé composé avec être：先掌握 aller / partir / arriver / rentrer",
+                  explanation: "这一单元开始接触用 être 作助动词的复合过去时，最核心的是 aller 以及旅行中常见的几个移动动词。A1 阶段不用一次性背很多动词，先把“去了、到了、回来了”说准。过去分词要和主语的性数配合，这在书写时尤其要注意。",
+                  table: [
+                    ["主语", "aller", "arriver", "rentrer"],
+                    ["je (m.)", "je suis allé", "je suis arrivé", "je suis rentré"],
+                    ["je (f.)", "je suis allée", "je suis arrivée", "je suis rentrée"],
+                    ["nous", "nous sommes allés / allées", "nous sommes arrivés / arrivées", "nous sommes rentrés / rentrées"],
+                    ["elles", "elles sont allées", "elles sont arrivées", "elles sont rentrées"]
+                  ],
+                  examples: [
+                    { fr: "Je suis allé à Marseille en train.", zh: "我坐火车去了马赛。" },
+                    { fr: "Nous sommes arrivés très tard à l'hôtel.", zh: "我们很晚才到酒店。" },
+                    { fr: "Elle est rentrée de vacances dimanche soir.", zh: "她周日晚上度假回来了。" },
+                    { fr: "Mes amies sont allées à la montagne en février.", zh: "我的朋友们二月去了山里。" }
+                  ],
+                  pitfall: "最常见的错误是把 aller 继续用 avoir：不能说 j'ai allé。另一个错误是忘记阴阳性和复数配合，例如 Elle est allé 应改为 Elle est allée。"
+                },
+                {
+                  title: "过去背景描写：c'était / il y avait / il faisait",
+                  explanation: "如果 passé composé 用来讲“发生了什么”，那 c'était、il y avait、il faisait 就负责讲“当时是什么样”。旅行明信片、城市介绍和风景描写里，这三种表达非常高频。它们能帮助你把叙述从“我去了哪里”升级到“那个地方怎样、天气怎样、周围有什么”。",
+                  table: [
+                    ["表达", "用途", "例句"],
+                    ["c'était", "评价整体情况", "C'était magnifique."],
+                    ["il y avait", "说明当时有……", "Il y avait beaucoup de touristes."],
+                    ["il faisait", "说明过去天气", "Il faisait beau et chaud."]
+                  ],
+                  examples: [
+                    { fr: "À Annecy, il y avait un lac magnifique et beaucoup de fleurs.", zh: "在阿讷西，有一个很漂亮的湖，还有很多花。" },
+                    { fr: "En Bretagne, il faisait un peu froid, mais c'était très beau.", zh: "在布列塔尼，天气有点冷，但非常美。" },
+                    { fr: "Sur la plage, il y avait du vent et il faisait gris.", zh: "海滩上风很大，天色灰蒙蒙的。" }
+                  ],
+                  pitfall: "不要把三种表达混用。c'était 更像“整体评价”，il y avait 表示“有某物/某人”，il faisait 主要讲天气和气候。"
+                }
+              ],
+              vocabularyGroups: [
+                {
+                  theme: "目的地与住宿",
+                  words: [
+                    { fr: "la mer", zh: "大海", example: "En été, beaucoup de Français partent à la mer.", exampleZh: "夏天，很多法国人去海边。" },
+                    { fr: "la montagne", zh: "山地、山区", example: "En hiver, mes parents préfèrent la montagne.", exampleZh: "冬天，我父母更喜欢山里。" },
+                    { fr: "la campagne", zh: "乡村", example: "La campagne est plus calme que la ville.", exampleZh: "乡村比城市更安静。" },
+                    { fr: "l'île (f.)", zh: "岛", example: "Nous voulons passer une semaine sur une île.", exampleZh: "我们想在一座岛上待一周。" },
+                    { fr: "l'hôtel (m.)", zh: "酒店", example: "Je téléphone à l'hôtel pour réserver une chambre.", exampleZh: "我给酒店打电话预订房间。" },
+                    { fr: "le camping", zh: "露营地", example: "Le camping est moins cher que l'hôtel.", exampleZh: "露营地比酒店便宜。" },
+                    { fr: "la chambre d'hôtes", zh: "民宿", example: "Nous avons trouvé une chambre d'hôtes très agréable.", exampleZh: "我们找到了一家很舒适的民宿。" },
+                    { fr: "la tente", zh: "帐篷", example: "Ils dorment sous la tente près du lac.", exampleZh: "他们睡在湖边的帐篷里。" }
+                  ]
+                },
+                {
+                  theme: "预订与交通",
+                  words: [
+                    { fr: "réserver une chambre", zh: "预订房间", example: "Je voudrais réserver une chambre double pour deux nuits.", exampleZh: "我想预订一间双人房，住两晚。" },
+                    { fr: "l'arrivée (f.)", zh: "到达", example: "L'arrivée est prévue à 18 heures.", exampleZh: "预计十八点到达。" },
+                    { fr: "le départ", zh: "离开、出发", example: "Le départ est samedi matin.", exampleZh: "出发时间是周六早上。" },
+                    { fr: "la chambre simple", zh: "单人房", example: "Une chambre simple est encore disponible.", exampleZh: "还有一间单人房可订。" },
+                    { fr: "la chambre double", zh: "双人房", example: "La chambre double donne sur la mer.", exampleZh: "双人房朝向大海。" },
+                    { fr: "le petit déjeuner compris", zh: "含早餐", example: "Le prix est de 85 euros, petit déjeuner compris.", exampleZh: "价格是 85 欧元，含早餐。" },
+                    { fr: "l'avion (m.)", zh: "飞机", example: "Nous prenons l'avion pour aller à Lisbonne.", exampleZh: "我们坐飞机去里斯本。" },
+                    { fr: "la voiture", zh: "汽车", example: "Avec la voiture, on peut visiter plusieurs villages.", exampleZh: "有车的话，我们可以去好几个村子。" }
+                  ]
+                },
+                {
+                  theme: "假期活动",
+                  words: [
+                    { fr: "se baigner", zh: "游泳、下水玩", example: "Les enfants aiment se baigner dans le lac.", exampleZh: "孩子们喜欢在湖里游泳。" },
+                    { fr: "bronzer", zh: "晒太阳", example: "Ma sœur adore bronzer sur la plage.", exampleZh: "我姐姐特别喜欢在海滩上晒太阳。" },
+                    { fr: "faire de la randonnée", zh: "徒步", example: "Nous avons fait de la randonnée toute la matinée.", exampleZh: "我们整个上午都在徒步。" },
+                    { fr: "faire du surf", zh: "冲浪", example: "Mon cousin veut faire du surf à Biarritz.", exampleZh: "我表哥想去比亚里茨冲浪。" },
+                    { fr: "goûter la cuisine locale", zh: "品尝当地美食", example: "À Lyon, nous avons goûté la cuisine locale.", exampleZh: "在里昂，我们品尝了当地美食。" },
+                    { fr: "prendre des photos", zh: "拍照", example: "Je prends beaucoup de photos pendant les voyages.", exampleZh: "我旅行时会拍很多照片。" },
+                    { fr: "visiter un musée", zh: "参观博物馆", example: "Quand il pleut, on peut visiter un musée.", exampleZh: "下雨的时候，可以去参观博物馆。" }
+                  ]
+                },
+                {
+                  theme: "自然与风景描写",
+                  words: [
+                    { fr: "la rivière", zh: "河流", example: "Il y a une petite rivière derrière le village.", exampleZh: "村子后面有一条小河。" },
+                    { fr: "le lac", zh: "湖", example: "Le lac est très beau le matin.", exampleZh: "这个湖在早上特别美。" },
+                    { fr: "la plage", zh: "海滩", example: "La plage est propre et tranquille.", exampleZh: "海滩很干净，也很安静。" },
+                    { fr: "les champs (m.)", zh: "田野", example: "Autour de la maison, il y avait des champs verts.", exampleZh: "房子周围有一片绿色田野。" },
+                    { fr: "les fleurs (f.)", zh: "花", example: "Au printemps, il y a des fleurs partout.", exampleZh: "春天到处都有花。" },
+                    { fr: "les arbres (m.)", zh: "树木", example: "Dans ce parc, les arbres sont très grands.", exampleZh: "这个公园里的树很高。" },
+                    { fr: "le chemin", zh: "小路", example: "Nous suivons un petit chemin vers la plage.", exampleZh: "我们沿着一条小路走向海滩。" }
+                  ]
+                }
+              ],
+              dictation: {
+                intro: "本单元默写重点是旅行词汇、比较结构、来源介词和旅行叙述中的过去表达。",
+                groups: [
+                  {
+                    title: "核心旅行词汇默写",
+                    type: "vocab",
+                    items: [
+                      { prompt: "酒店", answer: "l'hôtel (m.)", hint: "元音开头" },
+                      { prompt: "露营地", answer: "le camping", hint: "阳性" },
+                      { prompt: "双人房", answer: "la chambre double", hint: "阴性" },
+                      { prompt: "含早餐", answer: "le petit déjeuner compris", hint: "固定搭配" },
+                      { prompt: "乡村", answer: "la campagne", hint: "阴性" },
+                      { prompt: "山地、山区", answer: "la montagne", hint: "阴性" }
+                    ]
+                  },
+                  {
+                    title: "比较结构默写",
+                    type: "phrases",
+                    items: [
+                      { prompt: "这个酒店比那个酒店更安静。", answer: "Cet hôtel est plus calme que l'autre.", hint: "plus + adjectif + que" },
+                      { prompt: "海边没有山里那么便宜。", answer: "La mer est moins économique que la montagne.", hint: "moins ... que" },
+                      { prompt: "这个村子和那个村子一样漂亮。", answer: "Ce village est aussi beau que l'autre.", hint: "aussi ... que" }
+                    ]
+                  },
+                  {
+                    title: "来源介词默写",
+                    type: "phrases",
+                    items: [
+                      { prompt: "我从巴黎回来。", answer: "Je reviens de Paris.", hint: "城市前 de" },
+                      { prompt: "她来自意大利。", answer: "Elle vient d'Italie.", hint: "元音前 d'" },
+                      { prompt: "他们刚从加拿大回来。", answer: "Ils rentrent du Canada.", hint: "阳性国家 du" },
+                      { prompt: "我们来自美国。", answer: "Nous venons des États-Unis.", hint: "复数国家 des" }
+                    ]
+                  },
+                  {
+                    title: "过去旅行表达默写",
+                    type: "phrases",
+                    items: [
+                      { prompt: "我们去了海边。", answer: "Nous sommes allés à la mer.", hint: "aller 用 être" },
+                      { prompt: "天气很好。", answer: "Il faisait beau.", hint: "过去天气" },
+                      { prompt: "那里有很多游客。", answer: "Il y avait beaucoup de touristes.", hint: "过去背景" },
+                      { prompt: "真的很美。", answer: "C'était magnifique.", hint: "整体评价" }
+                    ]
+                  }
+                ]
+              },
+              phonetique: "本单元语音重点是辅音 [k] 和 [g]。初学者最容易在 c / g 不同拼写下混淆发音，例如 Canada、camping、gare、guide。练习时不要只背拼写，要把单词放进旅行场景里连读，比如 gare du centre、camping au bord du lac，这样更容易在听力里快速识别。",
+              tcf: "TCF Canada 很常见旅游广告、酒店说明、城市介绍、行程安排和天气景物类短文。做题时要特别抓价格、房型、日期、交通方式和人物从哪里来、去了哪里这些信息点。写作或口语里如果能同时用 passé composé 和 c'était / il y avait / il faisait，表达会明显更像完整叙述。"
             },
             exercises: [
-              { type: "填空", prompt: "Paris est _____ grand _____ ma ville.", answer: "plus / que" },
-              { type: "改错", prompt: "Corrigez : Je suis allé à Canada.", answer: "Je suis allé au Canada." },
-              { type: "表达", prompt: "写一张 4 句法语明信片。", answer: "开放题，检查地点、天气、活动表达。" }
+              {
+                type: "比较级填空",
+                instruction: "用 plus / moins / aussi 或 meilleur 的正确形式填空，完成旅行比较句。",
+                items: [
+                  { prompt: "Le camping est _____ cher _____ l'hôtel.", answer: "moins / que", explanation: "露营地通常更便宜，用 moins ... que。" },
+                  { prompt: "La plage est _____ calme _____ la ville.", answer: "plus / que", explanation: "表示“更安静”用 plus calme que。" },
+                  { prompt: "Cette chambre est _____ grande _____ l'autre.", answer: "aussi / que", explanation: "表示“一样大”用 aussi ... que。" },
+                  { prompt: "Pour moi, ce restaurant est _____ que celui du centre.", answer: "meilleur", explanation: "bon 的比较级是不规则形式 meilleur。" }
+                ]
+              },
+              {
+                type: "介词填空",
+                instruction: "根据地点类型填写 de / d' / du / des。",
+                items: [
+                  { prompt: "Je viens _____ Paris.", answer: "de", explanation: "城市前用 de。" },
+                  { prompt: "Elle rentre _____ Italie.", answer: "d'", explanation: "元音开头国家前用 d'。" },
+                  { prompt: "Ils arrivent _____ Canada.", answer: "du", explanation: "阳性国家前用 du。" },
+                  { prompt: "Nous revenons _____ États-Unis.", answer: "des", explanation: "复数国家前用 des。" },
+                  { prompt: "Tu es _____ France ou _____ Belgique ?", answer: "de / de", explanation: "阴性国家一般用 de。" }
+                ]
+              },
+              {
+                type: "订房表达",
+                instruction: "根据情境补全最合适的酒店预订表达。",
+                items: [
+                  { prompt: "Bonjour, je voudrais _____ une chambre double pour deux nuits.", answer: "réserver", explanation: "订房最核心动词是 réserver。" },
+                  { prompt: "Le petit déjeuner est-il _____ ?", answer: "compris", explanation: "含早餐说 petit déjeuner compris。" },
+                  { prompt: "Nous arrivons vendredi soir et le _____ est dimanche matin.", answer: "départ", explanation: "depart 表示离开时间。" },
+                  { prompt: "Est-ce qu'il y a un _____ pour la voiture ?", answer: "parking", explanation: "问停车位常用 parking。" }
+                ]
+              },
+              {
+                type: "过去时变位",
+                instruction: "把括号里的动词变成 passé composé，注意是否要和主语配合。",
+                items: [
+                  { prompt: "Hier, je (aller) _____ à Marseille.", answer: "suis allé(e)", explanation: "aller 在复合过去时用 être。" },
+                  { prompt: "Mes parents (rentrer) _____ dimanche soir.", answer: "sont rentrés", explanation: "主语是复数，过去分词也用复数。" },
+                  { prompt: "Ma sœur (arriver) _____ très tard à l'hôtel.", answer: "est arrivée", explanation: "阴性单数要加 e。" },
+                  { prompt: "Nous (partir) _____ tôt le matin.", answer: "sommes partis / parties", explanation: "nous 也要做性数配合。" }
+                ]
+              },
+              {
+                type: "背景描写填空",
+                instruction: "在 c'était / il y avait / il faisait 中选出最合适的表达。",
+                items: [
+                  { prompt: "À la montagne, _____ beaucoup de neige.", answer: "il y avait", explanation: "表示“有很多雪”用 il y avait。" },
+                  { prompt: "Sur la plage, _____ très beau.", answer: "il faisait", explanation: "过去天气用 il faisait。" },
+                  { prompt: "Le village était petit, mais _____ magnifique.", answer: "c'était", explanation: "整体评价用 c'était。" },
+                  { prompt: "Dans le parc, _____ des fleurs et des arbres partout.", answer: "il y avait", explanation: "说明当时有什么用 il y avait。" }
+                ]
+              },
+              {
+                type: "语法填空",
+                instruction: "阅读下面的旅行信息，在空格中填入最合适的词或形式。",
+                passage: "Bonjour Madame, je voudrais (1)_____ une chambre double pour deux nuits. Nous arrivons vendredi soir et nous repartons dimanche. Cet hôtel est un peu plus cher (2)_____ le camping, mais il est aussi plus confortable. L'année dernière, nous (3)_____ allés à Nice, mais cette année nous sommes rentrés (4)_____ Canada et nous avons visité la Bretagne. Là-bas, (5)_____ très beau, il (6)_____ beaucoup de petites plages et il (7)_____ souvent un peu de vent. Après le voyage, j'ai écrit une carte postale à ma grand-mère.",
+                items: [
+                  { blank: 1, answer: "réserver", explanation: "je voudrais + 动词原形。" },
+                  { blank: 2, answer: "que", explanation: "比较结构是 plus cher que。" },
+                  { blank: 3, answer: "sommes", explanation: "aller 用 être，主语是 nous。" },
+                  { blank: 4, answer: "du", explanation: "Canada 是阳性国家，用 du Canada。" },
+                  { blank: 5, answer: "c'était", explanation: "这里在回忆旅行背景，所以用 c'était。" },
+                  { blank: 6, answer: "y avait", explanation: "过去背景里“有很多海滩”用 il y avait。" },
+                  { blank: 7, answer: "faisait", explanation: "过去天气表达用 il faisait。" }
+                ]
+              },
+              {
+                type: "表达练习",
+                instruction: "根据情景写 50-80 词。你在旅行结束后要给朋友写一张明信片，介绍你去了哪里、住在哪里、天气和景色怎样、你更喜欢什么、做了什么活动。至少包含 1 个比较级、1 个 passé composé avec être、1 个 c'était / il y avait / il faisait。",
+                items: [
+                  {
+                    prompt: "写一张旅行明信片。",
+                    modelAnswer: "Salut Julie, je suis allée à Annecy le week-end dernier. Nous avons logé dans un petit hôtel au bord du lac. C'était plus calme que la ville et il faisait très beau. Il y avait des fleurs, des montagnes et un chemin près de l'eau. J'ai pris beaucoup de photos et nous sommes rentrés dimanche soir. Pour moi, les vacances à la montagne sont meilleures que les vacances à la mer !",
+                    keyPoints: [
+                      "要写清目的地和住宿",
+                      "至少出现一个比较结构",
+                      "至少出现一个 être 作助动词的过去时",
+                      "加入景色或天气背景描写",
+                      "内容应像真正寄出的明信片"
+                    ]
+                  }
+                ]
+              }
             ]
           },
           {
             id: "a1-u10",
             code: "Unité 10",
             title: "Au travail !",
-            focus: "学习、工作、能力、职业计划与基础输出",
+            focus: "校园、专业、能力、职业项目、工作环境与职业表达",
             lecture: {
-              summary: "A1 末尾把学习和工作场景串起来，是衔接 A2 的重要一步。",
-              canDo: ["说专业、工作和能力", "描述简单职业目标", "介绍学习环境"],
-              grammar: ["COD/COI 基础延伸", "持续时间表达", "关系代词 qui / que 入门"],
-              vocabulary: ["études, université, métier", "compétence, projet, équipe", "ordinateur, bureau, campus"],
-              tcf: "适合学校和工作信息类短文、介绍类口语。"
+              summary: "Unité 10 是 Édito A1 的收束单元，它把“学习”和“工作”两个场景连在一起，让你能从介绍个人信息，过渡到介绍自己的学校、专业、能力和职业方向。你不仅要会说自己学什么、会做什么，还要能说喜欢怎样的工作、想从事什么职业，以及如何更自然地用代词和关系从句组织信息。这一单元对 TCF Canada 里的学校介绍、职业计划、自我说明类任务很有帮助。",
+              canDo: [
+                "介绍自己的大学、校园空间和学习环境",
+                "说出自己的专业、课程和常见校园人物",
+                "表达自己会做什么、擅长什么、喜欢什么样的任务",
+                "介绍未来想从事的职业或职业计划",
+                "用 me / te / nous / vous 替代第一、二人称直接宾语",
+                "用 pendant / longtemps / toujours 说持续时间和延续状态",
+                "用 qui / que 把两句简单句连接起来",
+                "用 très / trop / assez 等表达程度和强度"
+              ],
+              grammarSections: [
+                {
+                  title: "Les pronoms COD (2)：me / te / nous / vous",
+                  explanation: "前面你已经接触过 le / la / les，这一单元继续补齐第一、二人称直接宾语代词。它们的作用是避免重复人称对象，让句子更自然，例如我认识你、老师帮助我们、我给你们打电话。位置规则仍然是放在变位动词前。",
+                  table: [
+                    ["主语", "直接宾语代词", "例句"],
+                    ["je + te", "je te", "Je te connais bien."],
+                    ["tu + me", "tu me", "Tu me comprends ?"],
+                    ["il + nous", "il nous", "Il nous aide beaucoup."],
+                    ["nous + vous", "nous vous", "Nous vous appelons demain."]
+                  ],
+                  examples: [
+                    { fr: "Le professeur nous écoute pendant le cours.", zh: "老师上课时会听我们发言。" },
+                    { fr: "Je te vois à la bibliothèque cet après-midi.", zh: "我今天下午在图书馆见你。" },
+                    { fr: "Vous me comprenez quand je parle français ?", zh: "我说法语的时候，你们能听懂我吗？" },
+                    { fr: "Nous vous invitons à visiter notre campus.", zh: "我们邀请你们来参观我们的校园。" }
+                  ],
+                  pitfall: "最常见问题是把代词放错位置，比如说 Je vois te。正确顺序是 Je te vois。遇到元音开头动词时，me / te 会缩写成 m' / t'，如 Tu m'écoutes ?"
+                },
+                {
+                  title: "La durée et la continuation：pendant / longtemps / toujours",
+                  explanation: "这一组表达帮助你说明一件事持续多久、持续到现在没有、或者一直保持某种状态。A1 阶段先抓最常用的三个词：pendant 表示一个持续时段，longtemps 表示“很久”，toujours 表示“仍然、一直”。",
+                  table: [
+                    ["表达", "用途", "例句"],
+                    ["pendant", "持续多长时间", "Je travaille pendant trois heures."],
+                    ["longtemps", "很久", "J'ai attendu longtemps."],
+                    ["toujours", "仍然、一直", "Je veux toujours devenir médecin."]
+                  ],
+                  examples: [
+                    { fr: "Nous restons à la bibliothèque pendant deux heures.", zh: "我们在图书馆待两个小时。" },
+                    { fr: "Mon père travaille longtemps le soir.", zh: "我爸爸晚上工作很久。" },
+                    { fr: "Je fais toujours des études de français.", zh: "我一直在学法语。" }
+                  ],
+                  pitfall: "中文里“学了两小时”和“学了很久”都可随意说，但法语里 pendant 是具体时长，longtemps 更偏笼统时长，不能机械互换。"
+                },
+                {
+                  title: "Les pronoms relatifs qui et que",
+                  explanation: "qui 和 que 用来把两句简单句连起来，让表达更紧凑。最基础的区分是：qui 后面跟动词，代替前面的主语；que 后面跟主语，代替前面的直接宾语。这个知识点在人物介绍、学校介绍、职业介绍里特别实用。",
+                  table: [
+                    ["关系代词", "作用", "例句"],
+                    ["qui", "代替主语", "C'est une université qui accueille beaucoup d'étudiants."],
+                    ["que", "代替直接宾语", "Voici le stage que je cherche."],
+                    ["qu'", "que 在元音前缩写", "C'est un projet qu'elle aime beaucoup."]
+                  ],
+                  examples: [
+                    { fr: "Je cherche un métier qui est utile.", zh: "我在找一份有用的职业。" },
+                    { fr: "C'est la formation que je préfère.", zh: "这是我最喜欢的课程培训。" },
+                    { fr: "Nous visitons une entreprise qui travaille à l'international.", zh: "我们参观一家从事国际业务的公司。" }
+                  ],
+                  pitfall: "判断方法不要靠中文直觉，先看关系代词后面紧跟的是动词还是主语。后面直接接动词，多半用 qui；后面还有主语，则通常用 que。"
+                },
+                {
+                  title: "L'intensité：très / trop / assez / un peu",
+                  explanation: "谈学校、工作和能力时，光说形容词不够，经常还要表达程度。A1 阶段最常用的是 très（很）、trop（太）、assez（相当、够）、un peu（有点）。这些词能帮助你更准确地评价课程、节奏、工作环境和个人感受。",
+                  table: [
+                    ["程度词", "意思", "例句"],
+                    ["très", "很", "Le campus est très grand."],
+                    ["trop", "太", "Le travail est trop stressant."],
+                    ["assez", "相当、够", "Cette salle est assez calme."],
+                    ["un peu", "有点", "Je suis un peu fatigué après les cours."]
+                  ],
+                  examples: [
+                    { fr: "Mon emploi du temps est très chargé cette semaine.", zh: "我这周的课表很满。" },
+                    { fr: "Ce bureau est trop petit pour six personnes.", zh: "这个办公室对六个人来说太小了。" },
+                    { fr: "Je suis assez motivée pour commencer un stage.", zh: "我足够有动力开始一份实习。" }
+                  ],
+                  pitfall: "trop 带有“过度”的负面意味，不要把它当成 très 的替代品。想表达正常程度的“很”，优先用 très。"
+                }
+              ],
+              vocabularyGroups: [
+                {
+                  theme: "校园与大学空间",
+                  words: [
+                    { fr: "le campus", zh: "校园", example: "Le campus est près du centre-ville.", exampleZh: "校园离市中心很近。" },
+                    { fr: "la bibliothèque", zh: "图书馆", example: "Je travaille souvent à la bibliothèque après les cours.", exampleZh: "我课后经常在图书馆学习。" },
+                    { fr: "la salle de cours", zh: "教室", example: "Notre salle de cours est au deuxième étage.", exampleZh: "我们的教室在二楼。" },
+                    { fr: "le secrétariat", zh: "教务处、秘书处", example: "Le secrétariat ouvre à huit heures.", exampleZh: "教务处八点开门。" },
+                    { fr: "le resto U", zh: "大学食堂", example: "À midi, nous mangeons au resto U.", exampleZh: "中午我们在大学食堂吃饭。" },
+                    { fr: "le bureau", zh: "办公室", example: "Le professeur est dans son bureau.", exampleZh: "老师在他的办公室里。" }
+                  ]
+                },
+                {
+                  theme: "专业、课程与人",
+                  words: [
+                    { fr: "les études (f.)", zh: "学业、学习", example: "Mes études de commerce me plaisent beaucoup.", exampleZh: "我很喜欢自己的商科学习。" },
+                    { fr: "la licence", zh: "本科阶段学位", example: "Elle prépare une licence de droit.", exampleZh: "她正在读法学本科。" },
+                    { fr: "le master", zh: "硕士", example: "Après la licence, il veut faire un master.", exampleZh: "本科之后，他想读硕士。" },
+                    { fr: "la discipline", zh: "学科", example: "Le français est une discipline importante pour moi.", exampleZh: "法语对我来说是一门重要学科。" },
+                    { fr: "l'étudiant (m.) / l'étudiante (f.)", zh: "学生", example: "Les étudiants arrivent tôt le matin.", exampleZh: "学生们一大早就到了。" },
+                    { fr: "le professeur", zh: "老师、教授", example: "Le professeur explique très bien la leçon.", exampleZh: "老师把这课讲得很好。" }
+                  ]
+                },
+                {
+                  theme: "职业与工作环境",
+                  words: [
+                    { fr: "l'entreprise (f.)", zh: "企业、公司", example: "Cette entreprise travaille avec le Canada.", exampleZh: "这家公司和加拿大有业务往来。" },
+                    { fr: "le métier", zh: "职业", example: "Je cherche un métier utile et intéressant.", exampleZh: "我想找一份有用又有意思的职业。" },
+                    { fr: "le stage", zh: "实习", example: "Nous faisons un stage en juin.", exampleZh: "我们六月实习。" },
+                    { fr: "l'équipe (f.)", zh: "团队", example: "J'aime travailler en équipe.", exampleZh: "我喜欢团队合作。" },
+                    { fr: "les conditions de travail", zh: "工作条件", example: "Les conditions de travail sont bonnes dans cette entreprise.", exampleZh: "这家公司的工作条件不错。" },
+                    { fr: "le télétravail", zh: "远程办公", example: "Le télétravail est pratique pour certaines personnes.", exampleZh: "远程办公对一些人来说很方便。" }
+                  ]
+                },
+                {
+                  theme: "能力与沟通工具",
+                  words: [
+                    { fr: "une compétence", zh: "能力、技能", example: "La communication est une compétence très utile.", exampleZh: "沟通是一项很有用的能力。" },
+                    { fr: "organiser", zh: "组织", example: "Je peux organiser un petit projet.", exampleZh: "我会组织一个小项目。" },
+                    { fr: "communiquer", zh: "沟通", example: "Nous communiquons par mail avec le secrétariat.", exampleZh: "我们通过邮件和教务处沟通。" },
+                    { fr: "le mail", zh: "邮件", example: "J'envoie un mail au professeur.", exampleZh: "我给老师发了一封邮件。" },
+                    { fr: "le téléphone", zh: "电话", example: "Au travail, je réponds souvent au téléphone.", exampleZh: "工作时我经常接电话。" },
+                    { fr: "motivé(e)", zh: "有动力的", example: "Je suis très motivée pour ce projet.", exampleZh: "我对这个项目非常有动力。" }
+                  ]
+                }
+              ],
+              dictation: {
+                intro: "本单元默写重点放在校园和职业词汇、COD 代词、持续时间表达以及职业计划句型。",
+                groups: [
+                  {
+                    title: "校园词汇默写",
+                    type: "vocab",
+                    items: [
+                      { prompt: "校园", answer: "le campus", hint: "阳性" },
+                      { prompt: "图书馆", answer: "la bibliothèque", hint: "阴性" },
+                      { prompt: "教务处、秘书处", answer: "le secrétariat", hint: "阳性" },
+                      { prompt: "大学食堂", answer: "le resto U", hint: "口语常用" },
+                      { prompt: "学生（阳）", answer: "l'étudiant (m.)", hint: "元音开头" }
+                    ]
+                  },
+                  {
+                    title: "职业与能力词汇默写",
+                    type: "vocab",
+                    items: [
+                      { prompt: "职业", answer: "le métier", hint: "阳性" },
+                      { prompt: "实习", answer: "le stage", hint: "阳性" },
+                      { prompt: "团队", answer: "l'équipe (f.)", hint: "元音开头" },
+                      { prompt: "能力、技能", answer: "une compétence", hint: "阴性" },
+                      { prompt: "有动力的（阴）", answer: "motivée", hint: "形容词阴性" }
+                    ]
+                  },
+                  {
+                    title: "COD 代词句型默写",
+                    type: "phrases",
+                    items: [
+                      { prompt: "我认识你。", answer: "Je te connais.", hint: "代词在动词前" },
+                      { prompt: "你听得懂我吗？", answer: "Tu me comprends ?", hint: "me 在前" },
+                      { prompt: "老师帮助我们。", answer: "Le professeur nous aide.", hint: "nous 作 COD" },
+                      { prompt: "我们明天给你们打电话。", answer: "Nous vous appelons demain.", hint: "vous 在前" }
+                    ]
+                  },
+                  {
+                    title: "持续时间与职业计划默写",
+                    type: "phrases",
+                    items: [
+                      { prompt: "我在图书馆学习两个小时。", answer: "J'étudie à la bibliothèque pendant deux heures.", hint: "pendant + 时长" },
+                      { prompt: "他晚上工作很久。", answer: "Il travaille longtemps le soir.", hint: "longtemps" },
+                      { prompt: "我一直想当老师。", answer: "Je veux toujours devenir professeur.", hint: "toujours" },
+                      { prompt: "我在找一份有意思的工作。", answer: "Je cherche un travail qui est intéressant.", hint: "qui 引导从句" }
+                    ]
+                  }
+                ]
+              },
+              phonetique: "本单元语音重点是辅音 [p] 和 [b]。这两个音对中文母语者来说看似简单，但在词首和连读环境里很容易混淆，比如 projet / bureau / bibliothèque / compétence。做听力时要注意浊音 [b] 和清音 [p] 会帮助你区分职业、项目和校园词。",
+              tcf: "TCF Canada 里经常出现学校介绍、课程安排、职业计划、自我能力说明和企业环境的短文本或短对话。做题时要抓人做什么、在哪里学习或工作、持续多久、喜欢什么类型的任务。口语和写作里如果能把学校、能力、项目和职业目标连成一段，分数会比单句罗列更稳。"
             },
             exercises: [
-              { type: "填空", prompt: "Je veux travailler _____ une école internationale.", answer: "dans" },
-              { type: "选择", prompt: "介绍能力时更自然的是？ A. Je peux travailler en équipe. B. Je suis équipe.", answer: "A. Je peux travailler en équipe." },
-              { type: "表达", prompt: "写 4 句介绍你的学习或工作计划。", answer: "开放题，检查项目和能力表达。" }
+              {
+                type: "COD 代词替换",
+                instruction: "把画线部分替换成 me / te / nous / vous。",
+                items: [
+                  { prompt: "Le professeur écoute nous. → Le professeur _____ écoute.", answer: "nous", explanation: "把 nous 作直接宾语提前到动词前。" },
+                  { prompt: "Je vois toi au campus. → Je _____ vois au campus.", answer: "te", explanation: "toi 替换成 te。" },
+                  { prompt: "Tu comprends moi ? → Tu _____ comprends ?", answer: "me", explanation: "moi 作直接宾语时用 me。" },
+                  { prompt: "Nous invitons vous à la conférence. → Nous _____ invitons à la conférence.", answer: "vous", explanation: "vous 放在动词 invitons 前。" }
+                ]
+              },
+              {
+                type: "持续时间填空",
+                instruction: "用 pendant / longtemps / toujours 填空。",
+                items: [
+                  { prompt: "Je travaille à la bibliothèque _____ deux heures.", answer: "pendant", explanation: "具体时长前用 pendant。" },
+                  { prompt: "Mon père reste au bureau très _____.", answer: "longtemps", explanation: "表示“很久”用 longtemps。" },
+                  { prompt: "Elle veut _____ devenir médecin.", answer: "toujours", explanation: "表示“一直还想”用 toujours。" },
+                  { prompt: "Nous préparons ce projet _____ trois semaines.", answer: "pendant", explanation: "持续三周用 pendant。" }
+                ]
+              },
+              {
+                type: "关系代词连句",
+                instruction: "用 qui 或 que 把两句合成一句。",
+                items: [
+                  { prompt: "Je cherche un stage. Ce stage est intéressant.", answer: "Je cherche un stage qui est intéressant.", explanation: "关系代词后面直接跟 est，说明代替主语，用 qui。" },
+                  { prompt: "Voilà le métier. Je préfère ce métier.", answer: "Voilà le métier que je préfère.", explanation: "que 代替后面句子的直接宾语。" },
+                  { prompt: "C'est une université. Elle accueille beaucoup d'étudiants étrangers.", answer: "C'est une université qui accueille beaucoup d'étudiants étrangers.", explanation: "后面直接跟动词 accueille，用 qui。" },
+                  { prompt: "Voici le projet. Nous préparons ce projet ensemble.", answer: "Voici le projet que nous préparons ensemble.", explanation: "que 代替 projet。" }
+                ]
+              },
+              {
+                type: "强度表达改写",
+                instruction: "根据中文提示，把句子补完整。",
+                items: [
+                  { prompt: "Le campus est _____ grand.（很）", answer: "très", explanation: "正常“很”用 très。" },
+                  { prompt: "Le bureau est _____ petit pour dix personnes.（太）", answer: "trop", explanation: "过度、不合适用 trop。" },
+                  { prompt: "Cette salle est _____ calme pour travailler.（相当、够）", answer: "assez", explanation: "达到足够程度用 assez。" },
+                  { prompt: "Je suis _____ fatigué après les cours.（有点）", answer: "un peu", explanation: "轻微程度用 un peu。" }
+                ]
+              },
+              {
+                type: "语法填空",
+                instruction: "阅读下面的校园介绍，在空格里填入最恰当的词或形式。",
+                passage: "Bonjour, je m'appelle Salomé. J'étudie à l'université de Lille. Le campus est très grand et il y a une bibliothèque que j'aime beaucoup. J'y travaille (1)_____ deux heures presque tous les jours. Mes professeurs sont exigeants, mais ils (2)_____ aident beaucoup. Cette année, je cherche un stage (3)_____ est utile et intéressant. Je veux travailler dans une entreprise internationale, parce que j'aime communiquer et organiser des projets. Mon ami Victor me téléphone souvent et je (4)_____ vois aussi sur le campus. Pour lui, le télétravail est très pratique, mais moi, je préfère un bureau où je peux voir mon équipe.",
+                items: [
+                  { blank: 1, answer: "pendant", explanation: "具体时长前用 pendant。" },
+                  { blank: 2, answer: "nous", explanation: "professeurs 帮助“我们”，用 nous aident。" },
+                  { blank: 3, answer: "qui", explanation: "后面直接跟 est，用 qui。" },
+                  { blank: 4, answer: "le", explanation: "这里替代 Victor，用 COD 代词 le，放在 vois 前。" }
+                ]
+              },
+              {
+                type: "表达练习",
+                instruction: "根据情景写 60-90 词。你要向一位法语老师介绍自己的大学生活和职业计划。至少包含 1 个 me / te / nous / vous，1 个 pendant / longtemps / toujours，1 个 qui 或 que，1 个强度副词。",
+                items: [
+                  {
+                    prompt: "写一段关于自己的学习环境和职业项目的介绍。",
+                    modelAnswer: "Bonjour, je suis étudiante et j'étudie le français à l'université. Mon campus est assez grand et la bibliothèque que je préfère est très calme. J'y travaille pendant deux heures après les cours. Mes professeurs nous aident beaucoup et je les écoute attentivement. Plus tard, je veux travailler dans une entreprise internationale qui communique avec le Canada. Je suis très motivée et je veux toujours améliorer mon français, parce que ce projet professionnel est important pour moi.",
+                    keyPoints: [
+                      "写清学校或校园环境",
+                      "写出至少一种能力或学习方式",
+                      "说明未来职业方向",
+                      "正确使用一个人称宾语代词",
+                      "正确使用 durée / continuation 表达",
+                      "至少出现一个关系代词从句"
+                    ]
+                  }
+                ]
+              }
             ]
           }
         ]
