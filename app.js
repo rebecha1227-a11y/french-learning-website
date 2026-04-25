@@ -554,6 +554,7 @@ function getUnitLearning(unitId){
   const u = state[unitId] || {};
   return {
     lectureDone: !!u.lectureDone,
+    exerciseAllDone: !!u.exerciseAllDone,
     exerciseKeys: Array.isArray(u.exerciseKeys) ? u.exerciseKeys : []
   };
 }
@@ -562,6 +563,7 @@ function saveUnitLearning(unitId, data){
   const state = getUnitLearningState();
   state[unitId] = {
     lectureDone: !!data.lectureDone,
+    exerciseAllDone: !!data.exerciseAllDone,
     exerciseKeys: [...new Set(data.exerciseKeys || [])]
   };
   saveUnitLearningState(state);
@@ -570,6 +572,12 @@ function saveUnitLearning(unitId, data){
 function markLectureDone(unitId){
   const curr = getUnitLearning(unitId);
   curr.lectureDone = true;
+  saveUnitLearning(unitId, curr);
+}
+
+function markExerciseAllDone(unitId){
+  const curr = getUnitLearning(unitId);
+  curr.exerciseAllDone = true;
   saveUnitLearning(unitId, curr);
 }
 
@@ -589,15 +597,16 @@ function getUnitStructuredProgress(unit){
   const totalExercises = allItems.length;
   const doneExerciseCount = curr.exerciseKeys.filter(k => k.startsWith(`${unit.id}::`)).length;
   const clampedDone = Math.min(doneExerciseCount, totalExercises);
-  const hasStructuredData = curr.lectureDone || clampedDone > 0;
+  const hasStructuredData = curr.lectureDone || curr.exerciseAllDone || clampedDone > 0;
   if(!hasStructuredData) return null;
 
   const lecturePart = curr.lectureDone ? 50 : 0;
-  const exercisePart = totalExercises > 0 ? Math.round((clampedDone / totalExercises) * 50) : 50;
+  const exercisePart = curr.exerciseAllDone ? 50 : (totalExercises > 0 ? Math.round((clampedDone / totalExercises) * 50) : 50);
   const pct = Math.max(0, Math.min(100, lecturePart + exercisePart));
   return {
     pct,
     lectureDone: curr.lectureDone,
+    exerciseAllDone: curr.exerciseAllDone,
     exerciseDone: clampedDone,
     exerciseTotal: totalExercises
   };
@@ -1164,12 +1173,35 @@ function renderTodayTasks(){
 }
 
 /* ── COURSE PROGRESS ── */
+function getCurrentBookUnits(){
+  const books = curriculum.books;
+  for(let bi = 0; bi < books.length; bi++){
+    const b = books[bi];
+    const units = b.units.map((u,ui) => ({
+      ...u,
+      level: b.level,
+      progress: computeUnitProgress(u.id, bi, ui)
+    }));
+    if(units.some(u => u.progress < 100)) return { level: b.level, units };
+  }
+  const lastBi = books.length - 1;
+  const b = books[lastBi];
+  return {
+    level: b.level,
+    units: b.units.map((u,ui) => ({
+      ...u,
+      level: b.level,
+      progress: computeUnitProgress(u.id, lastBi, ui)
+    }))
+  };
+}
+
 function renderCourseProgress(){
   const el    = document.getElementById("course-progress-card");
-  const units = getAllUnits().slice(0,8);
+  const { level, units } = getCurrentBookUnits();
   el.innerHTML = `
     <div class="card-header-row">
-      <span class="card-title">📚 课程进度</span>
+      <span class="card-title">📚 ${esc(level)} 进度</span>
       <button class="btn-ghost" onclick="showPage('curriculum')" style="font-size:11px;padding:4px 9px">全部 →</button>
     </div>
     <div class="progress-unit-list">
@@ -2172,7 +2204,7 @@ function bindCurriculumEvents(el){
 ══════════════════════════════════ */
 function buildUnitDetail(){
   const unit = getSelectedUnit();
-  const structured = getUnitStructuredProgress(unit) || { pct: 0, lectureDone: false, exerciseDone: 0, exerciseTotal: getExerciseItems(unit).length };
+  const structured = getUnitStructuredProgress(unit) || { pct: 0, lectureDone: false, exerciseAllDone: false, exerciseDone: 0, exerciseTotal: getExerciseItems(unit).length };
   return `
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
       <div>
@@ -2193,7 +2225,8 @@ function buildUnitDetail(){
       <div class="card-hdr"><span class="section-kicker">Progress</span><h4>单元完成情况</h4></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
         <button class="btn-ghost btn-small" id="unit-mark-lecture-btn">${structured.lectureDone ? "✓ 讲义已完成" : "标记讲义已学完"}</button>
-        <span style="font-size:12px;color:var(--text-sub)">练习正确进度：${structured.exerciseDone}/${structured.exerciseTotal || 0}</span>
+        <button class="btn-ghost btn-small" id="unit-mark-exercise-btn">${structured.exerciseAllDone ? "✓ 练习已完成" : "标记练习已完成"}</button>
+        <span style="font-size:12px;color:var(--text-sub)">在线答题：${structured.exerciseDone}/${structured.exerciseTotal || 0}</span>
         <span style="font-size:12px;color:var(--accent-teal)">单元进度：${structured.pct}%（讲义50% + 练习50%）</span>
       </div>
     </div>
@@ -2224,6 +2257,13 @@ function bindUnitDetailEvents(el){
   el.querySelector("#unit-mark-lecture-btn")?.addEventListener("click", () => {
     const unit = getSelectedUnit();
     markLectureDone(unit.id);
+    renderInnerPage("unit-detail", document.getElementById("page-unit-detail"));
+    renderCourseProgress();
+  });
+
+  el.querySelector("#unit-mark-exercise-btn")?.addEventListener("click", () => {
+    const unit = getSelectedUnit();
+    markExerciseAllDone(unit.id);
     renderInnerPage("unit-detail", document.getElementById("page-unit-detail"));
     renderCourseProgress();
   });
